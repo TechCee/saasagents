@@ -382,7 +382,16 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
           role="presentation"
           onClick={(e) => overlayClick(e, closeModal)}
         >
-          <div className="modal" style={{ width: 400, position: "fixed", right: 16, top: 62, margin: 0 }}>
+          <div
+            className="modal cc-modal-anchor"
+            style={{
+              width: "min(400px, calc(100vw - 24px))",
+              position: "fixed",
+              right: "max(12px, env(safe-area-inset-right))",
+              top: "max(58px, calc(52px + env(safe-area-inset-top)))",
+              margin: 0,
+            }}
+          >
             <div className="modal-hdr">
               <span className="modal-title">Notifications</span>
               <button type="button" className="modal-close" onClick={closeModal}>

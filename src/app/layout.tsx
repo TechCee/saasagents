@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Sora, Unbounded } from "next/font/google";
 import "./globals.css";
 
@@ -23,6 +23,14 @@ const jetbrains = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "OpSync — Command Center",
   description: "Operations cockpit — internal CRM and agent automations",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: "#060A14",
 };
 
 export default function RootLayout({

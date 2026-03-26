@@ -21,17 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         planLabel="GROWTH"
         trialDaysLeft={9}
         previewBanner={
-          <div
-            style={{
-              borderBottom: "1px solid rgba(255, 186, 8, 0.45)",
-              background: "rgba(255, 186, 8, 0.12)",
-              padding: "8px 16px",
-              textAlign: "center",
-              fontFamily: "var(--fm)",
-              fontSize: 10,
-              color: "var(--amber)",
-            }}
-          >
+          <div className="cc-preview-banner">
             UI PREVIEW MODE — no sign-in or Supabase required. Remove UI_PREVIEW_MODE from .env.local when
             you connect your backend.
           </div>

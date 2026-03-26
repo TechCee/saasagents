@@ -9,7 +9,7 @@ export default async function UnsubscribePage({
   const token = (await searchParams).token;
   if (!token) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6">
+      <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))] sm:min-h-screen sm:px-6">
         <h1 className="text-xl font-semibold">Invalid link</h1>
         <p className="mt-2 text-slate-600">This unsubscribe link is missing required data.</p>
       </main>
@@ -25,7 +25,7 @@ export default async function UnsubscribePage({
 
   if (!payload) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6">
+      <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 pb-8 pt-[max(2rem,env(safe-area-inset-top))] sm:min-h-screen sm:px-6">
         <h1 className="text-xl font-semibold">Link expired or invalid</h1>
         <p className="mt-2 text-slate-600">Request a fresh unsubscribe link from the sender.</p>
       </main>
@@ -72,7 +72,7 @@ export default async function UnsubscribePage({
   );
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-6">
+    <main className="mx-auto flex min-h-dvh max-w-lg flex-col justify-center px-4 pb-[max(2rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))] sm:min-h-screen sm:px-6">
       <h1 className="text-xl font-semibold">You’ve been unsubscribed</h1>
       <p className="mt-2 text-slate-600">
         We’ve removed <span className="font-medium">{email}</span> from marketing emails for this

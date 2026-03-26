@@ -78,13 +78,46 @@ export function CcV2AppShell({
 }) {
   const pathname = usePathname();
   const { openModal } = useCcV2Modal();
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (mobileNavOpen) {
+      document.body.classList.add("cc-v2-nav-open");
+    } else {
+      document.body.classList.remove("cc-v2-nav-open");
+    }
+    return () => document.body.classList.remove("cc-v2-nav-open");
+  }, [mobileNavOpen]);
+
+  const trialDays = trialDaysLeft ?? 9;
 
   return (
-    <div className="cc-v2-app">
+    <div className={`cc-v2-app${mobileNavOpen ? " cc-sidebar-open" : ""}`}>
       {previewBanner}
+      <button
+        type="button"
+        className="cc-nav-backdrop"
+        aria-label="Close navigation"
+        onClick={() => setMobileNavOpen(false)}
+      />
       <div className="shell">
         <header className="topbar">
-          <Link href="/dashboard" className="logo">
+          <button
+            type="button"
+            className="cc-nav-toggle"
+            aria-expanded={mobileNavOpen}
+            aria-controls="cc-primary-nav"
+            onClick={() => setMobileNavOpen((v) => !v)}
+          >
+            <span className="cc-nav-toggle-bars" aria-hidden />
+            <span className="sr-only">Menu</span>
+          </button>
+
+          <Link href="/dashboard" className="logo" onClick={() => setMobileNavOpen(false)}>
             <div className="logo-sq">OS</div>
             <span className="logo-name">OpSync</span>
           </Link>
@@ -115,19 +148,32 @@ export function CcV2AppShell({
           </div>
 
           <div className="topbar-right">
-            <div className="badge-trial">TRIAL · {trialDaysLeft ?? 9} DAYS</div>
-            <button type="button" className="notif-btn" onClick={() => openModal("notif")}>
+            <div className="badge-trial badge-trial--full">TRIAL · {trialDays} DAYS</div>
+            <div className="badge-trial badge-trial--compact" title={`Trial · ${trialDays} days left`}>
+              {trialDays}d
+            </div>
+            <button
+              type="button"
+              className="notif-btn"
+              aria-label="Notifications"
+              onClick={() => openModal("notif")}
+            >
               🔔<div className="notif-dot" />
             </button>
-            <div className="sep-v" />
-            <button type="button" className="avatar-btn" onClick={() => openModal("profile")}>
+            <div className="sep-v sep-v--desktop" />
+            <button
+              type="button"
+              className="avatar-btn"
+              aria-label="Account"
+              onClick={() => openModal("profile")}
+            >
               {userInitials}
             </button>
           </div>
         </header>
 
         <div className="mid">
-          <nav className="sidebar">
+          <nav id="cc-primary-nav" className="sidebar" aria-label="Main navigation">
             {NAV.map((entry, i) =>
               entry.kind === "section" ? (
                 <div key={`s-${entry.label}-${i}`} className="nav-section">
@@ -140,6 +186,7 @@ export function CcV2AppShell({
                   className={`nav-item${
                     pathname === entry.href || pathname.startsWith(`${entry.href}/`) ? " active" : ""
                   }`}
+                  onClick={() => setMobileNavOpen(false)}
                 >
                   <span className="nav-icon">{entry.icon}</span>
                   <span className="nav-label">{entry.label}</span>
@@ -154,7 +201,7 @@ export function CcV2AppShell({
               <div className="plan-box">
                 <div className="plan-tier">PLAN: {planLabel}</div>
                 <div className="plan-sub">
-                  Trial · {trialDaysLeft ?? 9} days left · £149/mo
+                  Trial · {trialDays} days left · £149/mo
                 </div>
               </div>
             </div>

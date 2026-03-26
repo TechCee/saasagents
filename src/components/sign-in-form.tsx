@@ -23,7 +23,7 @@ export function SignInForm({ showPreviewHint = false }: { showPreviewHint?: bool
   return (
     <form
       onSubmit={onSubmit}
-      className="relative mx-auto mt-10 max-w-sm space-y-5 rounded-2xl border border-[var(--cc-border-strong)] bg-[var(--cc-panel)]/90 px-8 py-8 shadow-[0_0_80px_rgba(34,211,238,0.06)] backdrop-blur-md cc-glow-cyan"
+      className="relative mx-auto mt-8 max-w-sm space-y-4 rounded-2xl border border-[var(--cc-border-strong)] bg-[var(--cc-panel)]/90 px-5 py-6 shadow-[0_0_80px_rgba(34,211,238,0.06)] backdrop-blur-md cc-glow-cyan sm:mt-10 sm:space-y-5 sm:px-8 sm:py-8"
     >
       <div>
         <h2 className="cc-font-display text-lg font-semibold text-white">Secure access</h2>
@@ -45,7 +45,7 @@ export function SignInForm({ showPreviewHint = false }: { showPreviewHint?: bool
           type="email"
           required
           autoComplete="email"
-          className="mt-1.5 w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-bg-deep)] px-3 py-2.5 text-sm text-white outline-none ring-[var(--cc-cyan)]/30 placeholder:text-slate-600 focus:ring-2"
+          className="mt-1.5 min-h-11 w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-bg-deep)] px-3 py-3 text-base text-white outline-none ring-[var(--cc-cyan)]/30 placeholder:text-slate-600 focus:ring-2 sm:min-h-0 sm:py-2.5 sm:text-sm"
           placeholder="you@company.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -71,7 +71,7 @@ export function SignInForm({ showPreviewHint = false }: { showPreviewHint?: bool
       ) : null}
       <button
         type="submit"
-        className="w-full rounded-lg bg-gradient-to-r from-[var(--cc-cyan)]/90 to-[var(--cc-cyan)]/70 py-2.5 text-sm font-semibold text-[var(--cc-bg-deep)] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:brightness-110"
+        className="min-h-12 w-full rounded-lg bg-gradient-to-r from-[var(--cc-cyan)]/90 to-[var(--cc-cyan)]/70 py-3 text-base font-semibold text-[var(--cc-bg-deep)] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:brightness-110 active:brightness-95 sm:min-h-0 sm:py-2.5 sm:text-sm"
       >
         Sign in to OpSync
       </button>
