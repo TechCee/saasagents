@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --cc-bg-deep: #050a10;
+  --cc-panel: #0a1219;
+  --cc-panel-elevated: #0f1923;
+  --cc-border: rgba(34, 211, 238, 0.14);
+  --cc-border-strong: rgba(34, 211, 238, 0.35);
+  --cc-cyan: #22d3ee;
+  --cc-lime: #a3e635;
+  --cc-amber: #fbbf24;
+  --cc-magenta: #e879f9;
+  --cc-rose: #fb7185;
+  --cc-text: #e2e8f0;
+  --cc-muted: #64748b;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-background: var(--cc-bg-deep);
+  --color-foreground: var(--cc-text);
+  --font-sans: var(--font-cc-sans);
+  --font-mono: var(--font-cc-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--cc-bg-deep);
+  color: var(--cc-text);
+  font-family: var(--font-cc-sans), system-ui, sans-serif;
+}
+
+/* Display / wordmark — Unbounded */
+.cc-font-display {
+  font-family: var(--font-cc-display), system-ui, sans-serif;
+}
+
+/* Subtle grid + glow for auth / hero areas */
+.cc-grid-bg {
+  background-color: var(--cc-bg-deep);
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.03) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.cc-glow-cyan {
+  box-shadow:
+    0 0 60px rgba(34, 211, 238, 0.08),
+    inset 0 0 0 1px var(--cc-border);
+}
+
+.cc-glow-magenta {
+  box-shadow: 0 0 40px rgba(232, 121, 249, 0.06);
 }

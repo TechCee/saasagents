@@ -1,65 +1,60 @@
-import Image from "next/image";
+import Link from "next/link";
+import { SignInForm } from "@/components/sign-in-form";
+import { isUiPreviewMode } from "@/lib/ui-preview";
 
-export default function Home() {
+type Props = { searchParams: Promise<{ needs?: string }> };
+
+export default async function Home({ searchParams }: Props) {
+  const preview = isUiPreviewMode();
+  const needs = (await searchParams).needs;
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="relative min-h-screen cc-grid-bg px-6 py-16">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.12), transparent), radial-gradient(ellipse 60% 40% at 100% 0%, rgba(232, 121, 249, 0.08), transparent)",
+        }}
+      />
+      {needs === "backend" ? (
+        <div className="relative mx-auto mb-8 max-w-lg rounded-xl border border-[var(--cc-amber)]/40 bg-[var(--cc-amber)]/10 px-4 py-3 text-center text-sm text-[var(--cc-amber)]">
+          Add Supabase URL and anon key to <code className="font-mono text-xs">.env.local</code>, or enable
+          UI preview below.
+        </div>
+      ) : null}
+      <div className="relative mx-auto max-w-lg text-center">
+        <div className="cc-font-display inline-flex items-center gap-2 rounded-full border border-[var(--cc-border)] bg-[var(--cc-panel)]/80 px-4 py-1.5 text-sm font-semibold tracking-tight text-[var(--cc-cyan)]">
+          OpSync
+        </div>
+        <h1 className="cc-font-display mt-6 bg-gradient-to-b from-white to-slate-400 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl">
+          Automated marketing operations
+        </h1>
+        <p className="mt-4 text-sm leading-relaxed text-[var(--cc-muted)]">
+          Internal CRM in Supabase — agents, sequences, and approvals in one cockpit. Sign in when your
+          project is wired, or open a read-only UI preview first.
+        </p>
+      </div>
+
+      {preview ? (
+        <div className="relative mx-auto mt-8 max-w-sm">
+          <Link
+            href="/dashboard"
+            className="flex w-full items-center justify-center rounded-xl border border-[var(--cc-lime)]/45 bg-[var(--cc-lime)]/15 py-4 font-semibold text-[var(--cc-lime)] shadow-[0_0_32px_rgba(163,230,53,0.12)] transition hover:bg-[var(--cc-lime)]/25"
+          >
+            Open dashboard — UI preview (no login)
+          </Link>
+          <p className="mt-3 text-center font-mono text-[10px] text-[var(--cc-muted)]">
+            Set in <code className="text-[var(--cc-cyan)]">.env.local</code>:{" "}
+            <code className="text-[var(--cc-cyan)]">UI_PREVIEW_MODE=true</code>
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+      ) : null}
+
+      <SignInForm showPreviewHint={preview} />
+      <p className="relative mx-auto mt-10 max-w-md text-center font-mono text-[10px] text-slate-600">
+        v5.1 · Trustle &amp; Process Pilots
+      </p>
+    </main>
   );
 }

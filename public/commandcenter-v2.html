@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1440">
+<title>OpSync — Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Sora:wght@300;400;500;600;700&family=Unbounded:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════ RESET */
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#060A14;--bg2:#090E1B;--bg3:#0D1525;--bg4:#111C30;
+  --surface:#0F1829;--surface2:#142035;--surface3:#192844;
+  --b1:#1A2E4A;--b2:#1E3655;--b3:#254069;
+  --cyan:#00EEFF;--cyan2:#00BFCC;--cyan3:#008FA0;
+  --cyan-a10:rgba(0,238,255,.10);--cyan-a20:rgba(0,238,255,.20);--cyan-a05:rgba(0,238,255,.05);
+  --green:#00FF9D;--green2:#00CC7A;
+  --green-a10:rgba(0,255,157,.10);--green-a20:rgba(0,255,157,.20);
+  --amber:#FFBA08;--amber2:#CC9400;
+  --amber-a10:rgba(255,186,8,.10);--amber-a20:rgba(255,186,8,.20);
+  --red:#FF3D5A;--red2:#CC2040;
+  --red-a10:rgba(255,61,90,.10);--red-a20:rgba(255,61,90,.20);
+  --purple:#9B7FFF;--purple2:#7B5FDF;
+  --purple-a10:rgba(155,127,255,.10);--purple-a20:rgba(155,127,255,.20);
+  --rose:#FF5FA0;
+  --t1:#E8F0FF;--t2:#A8BBDD;--t3:#6A80A0;--t4:#3D5070;
+  --fd:'Unbounded',system-ui,sans-serif;--fm:'JetBrains Mono',ui-monospace,monospace;--fb:'Sora',system-ui,sans-serif;
+  --r:3px;
+}
+html,body{height:100%;background:var(--bg);color:var(--t1);font-family:var(--fb);font-size:13px;overflow:hidden;}
+
+/* Scanline overlay */
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.04) 3px,rgba(0,0,0,.04) 4px);pointer-events:none;z-index:9998;}
+/* Subtle noise */
+body::after{content:'';position:fixed;inset:0;opacity:.018;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");pointer-events:none;z-index:9997;}
+
+/* ════════════════════════════════════════════════════════ LAYOUT */
+.shell{display:flex;flex-direction:column;height:100vh;}
+.mid{display:flex;flex:1;overflow:hidden;}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;scroll-behavior:smooth;}
+.page{display:none;padding:22px 26px;min-height:100%;flex-direction:column;gap:18px;animation:pgIn .18s ease-out;}
+.page.active{display:flex;}
+@keyframes pgIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b3);border-radius:2px}
+
+/* ══════════════════════════════════════════════════════ TOPBAR */
+.topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 18px;gap:14px;position:relative;flex-shrink:0;}
+.topbar::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,var(--cyan3) 20%,var(--cyan) 50%,var(--cyan3) 80%,transparent 100%);opacity:.6;}
+.logo{display:flex;align-items:center;gap:9px;text-decoration:none;}
+.logo-sq{width:28px;height:28px;background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan3) 100%);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-weight:700;font-size:10px;color:var(--bg);letter-spacing:-.5px;box-shadow:0 0 16px rgba(0,238,255,.35);}
+.logo-name{font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:-.02em;color:var(--t1);}
+.logo-sep{width:1px;height:18px;background:var(--b2);margin:0 4px;}
+.org-pill{font-family:var(--fm);font-size:10px;color:var(--t3);}
+.topbar-mid{flex:1;display:flex;justify-content:center;align-items:center;gap:20px;}
+.clock-display{font-family:var(--fm);font-size:11px;color:var(--cyan);letter-spacing:.08em;display:flex;align-items:center;gap:8px;}
+.clock-sep{color:var(--b3);}
+.agent-indicators{display:flex;gap:6px;align-items:center;}
+.ind{width:8px;height:8px;border-radius:50%;position:relative;cursor:default;}
+.ind.run::after{content:'';position:absolute;inset:-2px;border-radius:50%;background:inherit;opacity:.35;animation:ripple 1.4s ease-out infinite;}
+@keyframes ripple{0%{transform:scale(1);opacity:.35}70%{transform:scale(2.8);opacity:0}100%{transform:scale(1);opacity:0}}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.badge-trial{font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.08em;padding:3px 9px;border-radius:3px;border:1px solid var(--amber2);background:var(--amber-a10);color:var(--amber);}
+.notif-btn{position:relative;width:30px;height:30px;border-radius:var(--r);background:transparent;border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);font-size:13px;transition:all .15s;}
+.notif-btn:hover{border-color:var(--b3);color:var(--t2);}
+.notif-dot{position:absolute;top:4px;right:4px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid var(--bg2);}
+.avatar-btn{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--surface3),var(--cyan3));border:1.5px solid var(--cyan-a20);display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:10px;font-weight:700;color:var(--t1);cursor:pointer;}
+.sep-v{width:1px;height:18px;background:var(--b1);}
+
+/* ══════════════════════════════════════════════════════ SIDEBAR */
+.sidebar{width:196px;background:var(--bg2);border-right:1px solid var(--b1);display:flex;flex-direction:column;padding:8px 0;flex-shrink:0;overflow-y:auto;}
+.nav-section{padding:12px 14px 4px;font-family:var(--fm);font-size:8px;letter-spacing:.16em;color:var(--t4);text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;color:var(--t3);font-size:12px;font-weight:500;border-left:2px solid transparent;transition:all .13s;position:relative;}
+.nav-item.active{background:var(--cyan-a05);border-left-color:var(--cyan);color:var(--cyan);}
+.nav-item:hover:not(.active){background:rgba(255,255,255,.025);color:var(--t2);}
+.nav-icon{width:15px;text-align:center;flex-shrink:0;font-size:12px;}
+.nav-label{flex:1;}
+.nav-count{font-family:var(--fm);font-size:9px;font-weight:700;min-width:18px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+.nc-r{background:var(--red);color:#fff;}
+.nc-a{background:var(--amber);color:var(--bg);}
+.nc-c{background:var(--cyan);color:var(--bg);}
+.nc-g{background:var(--green);color:var(--bg);}
+.nc-p{background:var(--purple);color:#fff;}
+.sidebar-foot{margin-top:auto;padding:10px;}
+.plan-box{background:var(--amber-a10);border:1px solid var(--amber-a20);border-radius:var(--r);padding:9px 10px;}
+.plan-tier{font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.1em;color:var(--amber);margin-bottom:2px;}
+.plan-sub{font-size:10px;color:var(--t3);}
+
+/* ══════════════════════════════════════════════════════ PAGE HEADERS */
+.ph{display:flex;align-items:flex-end;justify-content:space-between;}
+.ph-left{display:flex;flex-direction:column;gap:3px;}
+.ph-eye{font-family:var(--fm);font-size:9px;letter-spacing:.16em;color:var(--cyan);text-transform:uppercase;}
+.ph-title{font-family:var(--fd);font-size:22px;font-weight:700;color:var(--t1);letter-spacing:-.01em;}
+.ph-right{display:flex;gap:7px;}
+
+/* ══════════════════════════════════════════════════════ BUTTONS */
+.btn{padding:7px 14px;border-radius:var(--r);font-size:11px;font-family:var(--fm);font-weight:600;letter-spacing:.04em;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t3);}
+.btn-ghost:hover{border-color:var(--b3);color:var(--t2);}
+.btn-c{background:var(--cyan-a10);border:1px solid var(--cyan-a20);color:var(--cyan);}
+.btn-c:hover{background:var(--cyan-a20);}
+.btn-g{background:var(--green-a10);border:1px solid var(--green-a20);color:var(--green);}
+.btn-g:hover{background:var(--green-a20);}
+.btn-a{background:var(--amber-a10);border:1px solid var(--amber-a20);color:var(--amber);}
+.btn-a:hover{background:var(--amber-a20);}
+.btn-r{background:var(--red-a10);border:1px solid var(--red-a20);color:var(--red);}
+.btn-r:hover{background:var(--red-a20);}
+.btn-p{background:var(--purple-a10);border:1px solid var(--purple-a20);color:var(--purple);}
+.btn-sm{padding:4px 10px;font-size:10px;}
+.btn-xs{padding:2px 7px;font-size:9px;}
+
+/* ══════════════════════════════════════════════════════ PANELS */
+.panel{background:var(--surface);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;}
+.panel-hdr{padding:9px 14px;border-bottom:1px solid var(--b1);display:flex;align-items:center;justify-content:space-between;gap:8px;background:rgba(0,0,0,.15);}
+.panel-label{font-family:var(--fm);font-size:8.5px;letter-spacing:.14em;color:var(--cyan);text-transform:uppercase;}
+.panel-action{font-family:var(--fm);font-size:9px;color:var(--cyan);cursor:pointer;letter-spacing:.06em;opacity:.7;}
+.panel-action:hover{opacity:1;}
+.panel-body{padding:12px 14px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+.gc-7-5{display:grid;grid-template-columns:7fr 5fr;gap:14px;}
+.gc-5-7{display:grid;grid-template-columns:5fr 7fr;gap:14px;}
+
+/* ══════════════════════════════════════════════════════ KPI CARDS */
+.kpi{background:var(--surface);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 4px,rgba(0,238,255,.006) 4px,rgba(0,238,255,.006) 5px);}
+.kpi-stripe{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.kpi-label{font-family:var(--fm);font-size:8.5px;letter-spacing:.12em;color:var(--t3);margin-bottom:8px;text-transform:uppercase;}
+.kpi-value{font-family:var(--fm);font-size:26px;font-weight:700;line-height:1;letter-spacing:-.01em;}
+.kpi-delta{margin-top:7px;font-family:var(--fm);font-size:9.5px;}
+.kv-c{color:var(--cyan);} .kv-g{color:var(--green);} .kv-a{color:var(--amber);} .kv-r{color:var(--red);} .kv-p{color:var(--purple);}
+.du{color:var(--green);} .dd{color:var(--red);} .dn{color:var(--t3);}
+
+/* ══════════════════════════════════════════════════════ CHIPS */
+.chip{display:inline-flex;align-items:center;gap:3px;font-family:var(--fm);font-size:8px;font-weight:700;letter-spacing:.07em;padding:2px 7px;border-radius:3px;white-space:nowrap;text-transform:uppercase;}
+.ch-c{background:var(--cyan-a10);border:1px solid rgba(0,238,255,.25);color:var(--cyan);}
+.ch-g{background:var(--green-a10);border:1px solid rgba(0,255,157,.25);color:var(--green);}
+.ch-a{background:var(--amber-a10);border:1px solid rgba(255,186,8,.25);color:var(--amber);}
+.ch-r{background:var(--red-a10);border:1px solid rgba(255,61,90,.25);color:var(--red);}
+.ch-p{background:var(--purple-a10);border:1px solid rgba(155,127,255,.25);color:var(--purple);}
+.ch-n{background:rgba(100,128,160,.08);border:1px solid rgba(100,128,160,.2);color:var(--t3);}
+.chip .dot{width:5px;height:5px;border-radius:50%;background:currentColor;}
+
+/* ══════════════════════════════════════════════════════ TABLES */
+.tbl-wrap{overflow-x:auto;}
+.tbl{width:100%;border-collapse:collapse;}
+.tbl th{padding:7px 12px;font-family:var(--fm);font-size:8px;letter-spacing:.12em;color:var(--t4);background:var(--bg3);border-bottom:1px solid var(--b1);text-align:left;white-space:nowrap;text-transform:uppercase;}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(26,46,74,.5);vertical-align:middle;font-size:12px;}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:var(--cyan-a05);}
+.tbl-cursor tr{cursor:pointer;}
+td.mn{font-family:var(--fm);font-size:10.5px;color:var(--t3);}
+td.nm{font-weight:500;color:var(--t1);}
+td.sm{font-size:10px;color:var(--t3);}
+.cell-name .n{font-weight:500;color:var(--t1);}
+.cell-name .s{font-size:10px;color:var(--t3);margin-top:1px;}
+
+/* Score bar */
+.score-wrap{display:flex;align-items:center;gap:6px;}
+.score-bar{width:56px;height:4px;background:var(--b1);border-radius:2px;overflow:hidden;flex-shrink:0;}
+.score-fill{height:100%;border-radius:2px;}
+.score-num{font-family:var(--fm);font-size:10px;width:24px;}
+
+/* ══════════════════════════════════════════════════════ FORM */
+.form-g{display:flex;flex-direction:column;gap:4px;}
+.form-g + .form-g{margin-top:0;}
+.fl{font-family:var(--fm);font-size:8.5px;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;}
+.fi,.fs,.fta{background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r);padding:7px 10px;color:var(--t1);font-size:12px;font-family:var(--fb);outline:none;transition:border-color .15s;width:100%;}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--cyan3);}
+.fs{cursor:pointer;}
+.fta{resize:vertical;min-height:70px;}
+.form-row{display:flex;gap:10px;}
+.form-row .form-g{flex:1;}
+.tog{width:34px;height:18px;border-radius:9px;background:var(--b2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--cyan3);}
+.tog::after{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:3px;left:3px;transition:left .2s;}
+.tog.on::after{left:19px;}
+.tog-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--t2);}
+
+/* ══════════════════════════════════════════════════════ TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--b1);}
+.tab{padding:9px 16px;font-size:12px;font-weight:500;cursor:pointer;color:var(--t3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .13s;font-family:var(--fb);}
+.tab.on{color:var(--cyan);border-bottom-color:var(--cyan);}
+.tab:hover:not(.on){color:var(--t2);}
+.tab-content{display:none;}
+.tab-content.on{display:block;}
+
+/* ══════════════════════════════════════════════════════ STATUS ROW */
+.agent-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r);border:1px solid var(--b1);margin-bottom:5px;transition:border-color .15s;}
+.agent-row:last-child{margin-bottom:0;}
+.agent-row:hover{border-color:var(--b2);}
+.ar-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;position:relative;}
+.ar-dot.run::after{content:'';position:absolute;inset:-1px;border-radius:50%;background:inherit;opacity:.3;animation:ripple 1.4s ease-out infinite;}
+.ar-name{flex:1;font-size:12px;font-weight:500;color:var(--t1);}
+.ar-sub{font-family:var(--fm);font-size:9px;color:var(--t3);}
+.ar-next{font-family:var(--fm);font-size:9px;color:var(--amber);}
+
+/* ══════════════════════════════════════════════════════ APPROVAL CARD */
+.appr-card{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;transition:border-color .15s;}
+.appr-card:last-child{margin-bottom:0;}
+.appr-card:hover{border-color:var(--b2);}
+.ac-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.ac-type{font-family:var(--fm);font-size:8px;font-weight:700;letter-spacing:.1em;}
+.ac-age{font-family:var(--fm);font-size:9px;color:var(--t3);}
+.ac-title{font-size:12px;color:var(--t1);margin-bottom:8px;line-height:1.45;}
+.ac-btns{display:flex;gap:5px;}
+.acb-ok{flex:1;padding:5px;border-radius:var(--r);background:var(--green-a10);border:1px solid rgba(0,255,157,.25);color:var(--green);font-family:var(--fm);font-size:9px;font-weight:700;cursor:pointer;text-align:center;transition:background .15s;}
+.acb-ok:hover{background:var(--green-a20);}
+.acb-rev{flex:1;padding:5px;border-radius:var(--r);background:transparent;border:1px solid var(--b2);color:var(--t3);font-family:var(--fm);font-size:9px;cursor:pointer;text-align:center;transition:all .15s;}
+.acb-rev:hover{color:var(--t2);}
+
+/* ══════════════════════════════════════════════════════ FEED */
+.feed-item{display:flex;gap:10px;padding:7px 0;position:relative;}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.feed-line{position:absolute;left:3px;top:18px;bottom:-4px;width:1px;background:var(--b1);}
+.feed-item:last-child .feed-line{display:none;}
+.feed-body{flex:1;}
+.feed-text{font-size:12px;color:var(--t2);line-height:1.5;}
+.feed-time{font-family:var(--fm);font-size:9px;color:var(--t4);margin-top:2px;}
+
+/* ══════════════════════════════════════════════════════ STANDUPS */
+.std-card{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:12px;position:relative;overflow:hidden;}
+.std-accent{position:absolute;left:0;top:0;bottom:0;width:3px;}
+.std-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.std-agent{display:flex;align-items:center;gap:7px;}
+.std-name{font-size:12px;font-weight:600;color:var(--t1);}
+.std-sub{font-size:10px;color:var(--t3);}
+.std-lbl{font-family:var(--fm);font-size:8px;letter-spacing:.1em;color:var(--t4);text-transform:uppercase;margin-bottom:4px;}
+.std-text{font-size:11px;color:var(--t2);line-height:1.6;}
+.std-ok{font-size:11px;color:var(--green);line-height:1.6;}
+.std-err{font-size:11px;color:var(--red);line-height:1.6;}
+.std-div{height:1px;background:var(--b1);margin:9px 0;}
+
+/* ══════════════════════════════════════════════════════ INTEL CARD */
+.intel-card{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;transition:border-color .15s;}
+.intel-card:last-child{margin-bottom:0;}
+.intel-card:hover{border-color:var(--b2);}
+.ic-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.ic-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.ic-channel{font-family:var(--fm);font-size:9px;color:var(--t3);}
+.ic-rel{font-family:var(--fm);font-size:9px;font-weight:600;}
+.ic-title{font-size:12px;font-weight:500;color:var(--t1);margin-bottom:4px;line-height:1.4;}
+.ic-body{font-size:11px;color:var(--t2);line-height:1.55;}
+.ic-actions{display:flex;gap:5px;margin-top:8px;}
+
+/* ══════════════════════════════════════════════════════ MEMORY CARD */
+.mem-card{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;margin-bottom:7px;}
+.mem-card:last-child{margin-bottom:0;}
+.mc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.mc-left{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.mc-type{font-family:var(--fm);font-size:8px;font-weight:700;letter-spacing:.1em;padding:2px 7px;border-radius:3px;}
+.mct-action{background:var(--cyan-a10);border:1px solid rgba(0,238,255,.2);color:var(--cyan);}
+.mct-decision{background:var(--green-a10);border:1px solid rgba(0,255,157,.2);color:var(--green);}
+.mct-intel{background:var(--purple-a10);border:1px solid rgba(155,127,255,.2);color:var(--purple);}
+.mc-body{font-size:11px;color:var(--t2);line-height:1.6;margin-bottom:5px;}
+.mc-foot{font-family:var(--fm);font-size:9px;color:var(--t4);display:flex;gap:12px;}
+.mc-imp{font-family:var(--fm);font-size:9px;color:var(--amber);}
+
+/* ══════════════════════════════════════════════════════ BLOG CARD */
+.blog-card{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px;transition:border-color .15s;}
+.blog-card:hover{border-color:var(--b2);}
+.bc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:7px;}
+.bc-title{font-size:13px;font-weight:600;color:var(--t1);line-height:1.4;}
+.bc-excerpt{font-size:11px;color:var(--t2);line-height:1.55;margin-bottom:9px;}
+.bc-meta{font-family:var(--fm);font-size:9px;color:var(--t3);display:flex;gap:10px;flex-wrap:wrap;}
+.bc-btns{display:flex;gap:5px;margin-top:9px;}
+
+/* ══════════════════════════════════════════════════════ SEO RANK */
+.rank-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(26,46,74,.5);}
+.rank-row:last-child{border-bottom:none;}
+.rank-n{font-family:var(--fm);font-size:20px;font-weight:700;width:28px;text-align:center;flex-shrink:0;}
+.rank-info{flex:1;min-width:0;}
+.rank-url{font-family:var(--fm);font-size:10px;color:var(--cyan);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.rank-title{font-size:12px;color:var(--t1);}
+.rank-stats{display:flex;gap:12px;flex-shrink:0;}
+.rank-stat{font-family:var(--fm);font-size:9px;color:var(--t3);}
+.rank-stat b{color:var(--t1);}
+
+/* ══════════════════════════════════════════════════════ PRODUCT CARD */
+.prod-card{background:var(--surface);border:1px solid var(--b1);border-radius:var(--r);overflow:hidden;cursor:pointer;transition:border-color .15s;}
+.prod-card:hover{border-color:var(--b2);}
+.pc-top{padding:14px;display:flex;gap:12px;align-items:center;}
+.pc-logo{width:42px;height:42px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-family:var(--fd);font-size:15px;font-weight:800;flex-shrink:0;}
+.pc-info .pc-name{font-size:14px;font-weight:600;color:var(--t1);margin-bottom:3px;}
+.pc-info .pc-desc{font-size:11px;color:var(--t3);line-height:1.45;}
+.pc-stats{padding:8px 14px;border-top:1px solid var(--b1);display:flex;gap:14px;}
+.pc-stat{font-family:var(--fm);font-size:9px;color:var(--t3);}
+.pc-stat span{font-size:11px;color:var(--cyan);}
+.pc-foot{padding:8px 14px;border-top:1px solid var(--b1);display:flex;gap:6px;}
+
+/* ══════════════════════════════════════════════════════ USER ROW */
+.user-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(26,46,74,.4);}
+.user-row:last-child{border-bottom:none;}
+.user-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;font-weight:700;flex-shrink:0;}
+.user-info{flex:1;}
+.user-name{font-size:13px;font-weight:500;color:var(--t1);}
+.user-email{font-size:10px;color:var(--t3);}
+.role-badge{font-family:var(--fm);font-size:8.5px;font-weight:700;letter-spacing:.07em;padding:2px 8px;border-radius:3px;text-transform:uppercase;}
+.rb-sa{background:var(--amber-a10);border:1px solid var(--amber-a20);color:var(--amber);}
+.rb-admin{background:var(--cyan-a10);border:1px solid var(--cyan-a20);color:var(--cyan);}
+.rb-viewer{background:rgba(100,128,160,.08);border:1px solid rgba(100,128,160,.2);color:var(--t3);}
+
+/* ══════════════════════════════════════════════════════ PRICING */
+.price-card{background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:20px;flex:1;position:relative;}
+.price-card.current{border-color:rgba(0,238,255,.35);box-shadow:0 0 28px rgba(0,238,255,.07);}
+.price-tier{font-family:var(--fm);font-size:9px;letter-spacing:.14em;color:var(--t3);text-transform:uppercase;margin-bottom:6px;}
+.price-num{font-family:var(--fd);font-size:30px;font-weight:800;color:var(--t1);margin-bottom:4px;}
+.price-num sub{font-size:12px;color:var(--t3);font-weight:400;}
+.price-div{height:1px;background:var(--b1);margin:12px 0;}
+.price-feat{font-size:11px;color:var(--t2);padding:4px 0;border-bottom:1px solid rgba(26,46,74,.4);}
+.price-feat::before{content:'✓  ';color:var(--green);}
+.price-feat:last-of-type{border-bottom:none;}
+
+/* ══════════════════════════════════════════════════════ SUPER ADMIN */
+.org-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(26,46,74,.4);}
+.org-row:last-child{border-bottom:none;}
+.org-logo{width:30px;height:30px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:11px;font-weight:700;flex-shrink:0;}
+.org-name{font-size:13px;font-weight:500;color:var(--t1);}
+.org-sub{font-size:10px;color:var(--t3);}
+.mrr{font-family:var(--fm);font-size:11px;font-weight:700;color:var(--green);background:var(--green-a10);border:1px solid rgba(0,255,157,.25);padding:2px 8px;border-radius:3px;}
+
+/* ══════════════════════════════════════════════════════ MISC */
+.divider{display:flex;align-items:center;gap:10px;}
+.div-label{font-family:var(--fm);font-size:8px;letter-spacing:.14em;color:var(--t4);text-transform:uppercase;white-space:nowrap;}
+.div-line{flex:1;height:1px;background:var(--b1);}
+.info-box{background:var(--cyan-a05);border:1px solid rgba(0,238,255,.12);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--t2);line-height:1.6;}
+.warn-box{background:var(--amber-a10);border:1px solid var(--amber-a20);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--amber);line-height:1.6;}
+.error-box{background:var(--red-a10);border:1px solid var(--red-a20);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--red);line-height:1.6;}
+.prog-bar{height:5px;background:var(--b1);border-radius:3px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:3px;}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:3px;font-size:10px;font-weight:500;margin:1px;}
+.tag-c{background:var(--cyan-a10);border:1px solid rgba(0,238,255,.15);color:var(--cyan);}
+.tag-p{background:var(--purple-a10);border:1px solid rgba(155,127,255,.15);color:var(--purple);}
+.color-dot{width:22px;height:22px;border-radius:3px;border:1px solid rgba(255,255,255,.1);cursor:pointer;flex-shrink:0;}
+.sep{height:1px;background:var(--b1);margin:6px 0;}
+
+/* ══════════════════════════════════════════════════════ EMAIL PREVIEW */
+.ep-chrome{background:#e8ecf2;border:1px solid #d1d9e0;border-radius:5px 5px 0 0;padding:8px 12px;}
+.ep-chrome .win-dots{display:flex;gap:5px;margin-bottom:5px;}
+.ep-chrome .wd{width:9px;height:9px;border-radius:50%;}
+.ep-chrome .from-line{font-size:12px;font-weight:600;color:#1e293b;font-family:system-ui,sans-serif;}
+.ep-chrome .subj-line{font-size:12px;color:#1e293b;font-family:system-ui,sans-serif;margin-top:2px;}
+.ep-chrome .prev-line{font-size:11px;color:#64748b;font-family:system-ui,sans-serif;margin-top:1px;}
+.ep-body{border:1px solid #d1d9e0;border-top:none;border-radius:0 0 5px 5px;background:#fff;overflow:hidden;}
+.ep-email-hdr{padding:22px 28px;text-align:center;}
+.ep-email-body{padding:24px 28px;font-family:Arial,sans-serif;font-size:14px;color:#1e293b;line-height:1.7;}
+.ep-email-footer{background:#f8fafc;padding:14px 28px;text-align:center;font-family:Arial,sans-serif;font-size:11px;color:#94a3b8;border-top:1px solid #e2e8f0;}
+
+/* ══════════════════════════════════════════════════════ MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--b2);border-radius:5px;width:620px;max-height:82vh;overflow-y:auto;animation:pgIn .15s ease-out;}
+.modal-hdr{padding:16px 20px;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;}
+.modal-title{font-family:var(--fd);font-size:16px;font-weight:700;color:var(--t1);}
+.modal-close{cursor:pointer;color:var(--t3);font-size:20px;line-height:1;transition:color .13s;}
+.modal-close:hover{color:var(--t1);}
+.modal-body{padding:20px;}
+.modal-foot{padding:14px 20px;border-top:1px solid var(--b1);display:flex;justify-content:flex-end;gap:7px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ════════════════════════════════════════════════════ TOP BAR -->
+<header class="topbar">
+  <a class="logo">
+    <div class="logo-sq">OS</div>
+    <span class="logo-name">OpSync</span>
+  </a>
+  <div class="logo-sep"></div>
+  <span class="org-pill">Trustle &amp; Process Pilots</span>
+
+  <div class="topbar-mid">
+    <div class="clock-display">
+      <span style="color:var(--t4);font-size:9px">SYS</span>
+      <span id="live-clock">09:14:37 UTC</span>
+      <span class="clock-sep">·</span>
+      <span style="color:var(--t3);font-size:10px">26 MAR 2026</span>
+    </div>
+    <div class="sep-v"></div>
+    <div class="agent-indicators">
+      <div class="ind run" style="background:var(--cyan)" title="Lead Sourcer: RUNNING"></div>
+      <div class="ind run" style="background:var(--cyan)" title="Email Comms: RUNNING"></div>
+      <div class="ind" style="background:var(--green)" title="Blog: OK"></div>
+      <div class="ind" style="background:var(--red)" title="Dev/QA: ERROR"></div>
+      <div class="ind" style="background:var(--green)" title="SEO: OK"></div>
+      <div class="ind" style="background:var(--amber)" title="Scout: SCHEDULED"></div>
+      <div class="ind" style="background:var(--amber)" title="Standup: SCHEDULED"></div>
+    </div>
+    <div class="sep-v"></div>
+    <span style="font-family:var(--fm);font-size:9px;color:var(--t4)">2 RUNNING · 1 ERROR · 4 SCHEDULED</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="badge-trial">TRIAL · 9 DAYS</div>
+    <div class="notif-btn" onclick="openModal('modal-notif')">🔔<div class="notif-dot"></div></div>
+    <div class="sep-v"></div>
+    <div class="avatar-btn" onclick="openModal('modal-profile')">CL</div>
+  </div>
+</header>
+
+<div class="mid">
+<!-- ════════════════════════════════════════════════════ SIDEBAR -->
+<nav class="sidebar">
+  <div class="nav-section">Overview</div>
+  <div class="nav-item active" onclick="nav('dashboard')"><span class="nav-icon">▦</span><span class="nav-label">Dashboard</span></div>
+
+  <div class="nav-section">Outreach</div>
+  <div class="nav-item" onclick="nav('leads')"><span class="nav-icon">◈</span><span class="nav-label">Leads</span><span class="nav-count nc-c">247</span></div>
+  <div class="nav-item" onclick="nav('campaigns')"><span class="nav-icon">◉</span><span class="nav-label">Campaigns</span><span class="nav-count nc-a">3</span></div>
+  <div class="nav-item" onclick="nav('emailpreview')"><span class="nav-icon">👁</span><span class="nav-label">Email Preview</span></div>
+  <div class="nav-item" onclick="nav('followups')"><span class="nav-icon">↩</span><span class="nav-label">Follow-Ups</span><span class="nav-count nc-r">14</span></div>
+
+  <div class="nav-section">Content</div>
+  <div class="nav-item" onclick="nav('blog')"><span class="nav-icon">◇</span><span class="nav-label">Blog Posts</span><span class="nav-count nc-a">2</span></div>
+  <div class="nav-item" onclick="nav('seo')"><span class="nav-icon">◎</span><span class="nav-label">SEO</span></div>
+
+  <div class="nav-section">Intelligence</div>
+  <div class="nav-item" onclick="nav('intelligence')"><span class="nav-icon">📡</span><span class="nav-label">Intelligence</span><span class="nav-count nc-c">18</span></div>
+  <div class="nav-item" onclick="nav('memory')"><span class="nav-icon">🧠</span><span class="nav-label">Memory</span></div>
+
+  <div class="nav-section">Operations</div>
+  <div class="nav-item" onclick="nav('logs')"><span class="nav-icon">▤</span><span class="nav-label">Agent Logs</span><span class="nav-count nc-r">1</span></div>
+  <div class="nav-item" onclick="nav('standups')"><span class="nav-icon">☀</span><span class="nav-label">Standups</span></div>
+  <div class="nav-item" onclick="nav('agents')"><span class="nav-icon">◆</span><span class="nav-label">Agents</span></div>
+  <div class="nav-item" onclick="nav('scheduler')"><span class="nav-icon">⏱</span><span class="nav-label">Scheduler</span></div>
+
+  <div class="nav-section">Platform</div>
+  <div class="nav-item" onclick="nav('products')"><span class="nav-icon">⊞</span><span class="nav-label">Products</span></div>
+  <div class="nav-item" onclick="nav('branding')"><span class="nav-icon">🎨</span><span class="nav-label">Branding</span></div>
+  <div class="nav-item" onclick="nav('users')"><span class="nav-icon">👤</span><span class="nav-label">Users</span></div>
+  <div class="nav-item" onclick="nav('settings')"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span></div>
+  <div class="nav-item" onclick="nav('billing')"><span class="nav-icon">💳</span><span class="nav-label">Billing</span></div>
+  <div class="nav-item" onclick="nav('superadmin')"><span class="nav-icon">👑</span><span class="nav-label">Super Admin</span></div>
+
+  <div class="sidebar-foot">
+    <div class="plan-box">
+      <div class="plan-tier">PLAN: GROWTH</div>
+      <div class="plan-sub">Trial · 9 days left · £149/mo</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════ CONTENT -->
+<main class="content">
+
+<!-- ─────────────────────────────────────── DASHBOARD -->
+<div id="pg-dashboard" class="page active">
+  <div class="ph">
+    <div class="ph-left"><div class="ph-eye">// DASHBOARD</div><div class="ph-title">Operations Overview</div></div>
+    <div class="ph-right"><button class="btn btn-ghost btn-sm">⌘K  COMMAND</button><button class="btn btn-c btn-sm">▶  RUN ALL AGENTS</button></div>
+  </div>
+
+  <div class="g5">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Leads This Week</div><div class="kpi-value kv-c">0,247</div><div class="kpi-delta du">▲ +35 this week</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Emails Sent</div><div class="kpi-value kv-g">1,089</div><div class="kpi-delta du">▲ +34 this week</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Avg Open Rate</div><div class="kpi-value kv-a">31.4%</div><div class="kpi-delta dd">▼ −2.1% vs last wk</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Posts Published</div><div class="kpi-value kv-c">00,08</div><div class="kpi-delta du">▲ +2 this month</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">Active Enrolments</div><div class="kpi-value kv-p">00,74</div><div class="kpi-delta du">▲ +23 today</div></div>
+  </div>
+
+  <div class="g2">
+    <!-- Agent Status -->
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-label">// Agent Status</span><span class="panel-action" onclick="nav('agents')">MANAGE AGENTS →</span></div>
+      <div class="panel-body" style="padding:10px 12px">
+        <div class="agent-row"><div class="ar-dot run" style="background:var(--cyan)"></div><span style="font-size:13px;color:var(--cyan)">◈</span><span class="ar-name">Lead Sourcing</span><span class="chip ch-c"><span class="dot"></span>RUNNING</span><span class="ar-next" style="margin-left:auto">→ 23h 58m</span></div>
+        <div class="agent-row"><div class="ar-dot run" style="background:var(--cyan)"></div><span style="font-size:13px;color:var(--green)">◉</span><span class="ar-name">Email Comms</span><span class="chip ch-c"><span class="dot"></span>RUNNING</span><span class="ar-next" style="margin-left:auto">follow-ups</span></div>
+        <div class="agent-row"><div class="ar-dot" style="background:var(--green)"></div><span style="font-size:13px;color:var(--purple)">◇</span><span class="ar-name">Blog Writer</span><span class="chip ch-g">SUCCESS</span><span class="ar-sub" style="margin-left:auto">→ Mon 07:00</span></div>
+        <div class="agent-row"><div class="ar-dot" style="background:var(--red)"></div><span style="font-size:13px;color:var(--amber)">◆</span><span class="ar-name">Dev / QA</span><span class="chip ch-r">ERROR</span><span class="ar-sub" style="margin-left:auto;color:var(--red)">GitHub token</span></div>
+        <div class="agent-row"><div class="ar-dot" style="background:var(--green)"></div><span style="font-size:13px">🌐</span><span class="ar-name">SEO Agent</span><span class="chip ch-g">SUCCESS</span><span class="ar-sub" style="margin-left:auto">→ Wed 06:00</span></div>
+        <div class="agent-row"><div class="ar-dot" style="background:var(--amber)"></div><span style="font-size:13px">📡</span><span class="ar-name">Channel Scout</span><span class="chip ch-a">SCHEDULED</span><span class="ar-sub" style="margin-left:auto">→ Fri 05:00</span></div>
+        <div class="agent-row"><div class="ar-dot" style="background:var(--amber)"></div><span style="font-size:13px">☀</span><span class="ar-name">Standup Agent</span><span class="chip ch-a">SCHEDULED</span><span class="ar-sub" style="margin-left:auto">→ 07:00 UTC</span></div>
+      </div>
+    </div>
+
+    <!-- Pending Approvals -->
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-label">// Pending Approvals</span><span style="background:var(--red);color:#fff;font-family:var(--fm);font-size:9px;font-weight:700;padding:2px 7px;border-radius:9px">5</span></div>
+      <div class="panel-body" style="padding:10px 12px">
+        <div class="appr-card" style="border-left:3px solid var(--cyan)"><div class="ac-top"><span class="ac-type" style="color:var(--cyan)">FOLLOW-UP BATCH</span><span class="ac-age">just now</span></div><div class="ac-title">Trustle Outreach — FU-2 · 14 leads ready for Value-Add tone</div><div class="ac-btns"><div class="acb-ok">✓ APPROVE ALL</div><div class="acb-rev" onclick="nav('emailpreview')">👁 PREVIEW</div></div></div>
+        <div class="appr-card" style="border-left:3px solid var(--green)"><div class="ac-top"><span class="ac-type" style="color:var(--green)">CAMPAIGN DRAFT</span><span class="ac-age">1h ago</span></div><div class="ac-title">Process Pilots — BA Cold Outreach Draft (15 leads)</div><div class="ac-btns"><div class="acb-ok">✓ APPROVE</div><div class="acb-rev" onclick="nav('emailpreview')">👁 PREVIEW</div></div></div>
+        <div class="appr-card" style="border-left:3px solid var(--purple)"><div class="ac-top"><span class="ac-type" style="color:var(--purple)">BLOG POST DRAFT</span><span class="ac-age">2h ago</span></div><div class="ac-title">Trustle: "SaaS Sprawl — The Hidden IT Risk Most Teams Ignore"</div><div class="ac-btns"><div class="acb-ok">✓ APPROVE</div><div class="acb-rev" onclick="nav('blog')">READ DRAFT</div></div></div>
+        <div class="appr-card" style="border-left:3px solid var(--amber)"><div class="ac-top"><span class="ac-type" style="color:var(--amber)">SEO ACTION</span><span class="ac-age">4h ago</span></div><div class="ac-title">Add JSON-LD schema to /blog/access-management-2026 · estimated +20% CTR</div><div class="ac-btns"><div class="acb-ok">APPLY</div><div class="acb-rev" onclick="nav('seo')">VIEW SEO</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <!-- Standups today -->
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-label">// Today's Standups — 26 Mar</span><span class="panel-action" onclick="nav('standups')">ALL STANDUPS →</span></div>
+      <div class="panel-body" style="padding:10px 12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div class="std-card"><div class="std-accent" style="background:var(--cyan)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--cyan);font-size:14px">◈</span><div><div class="std-name">Lead Sourcer</div><div class="std-sub">Running</div></div></div><span class="chip ch-c" style="font-size:7px"><span class="dot"></span>NOW</span></div><div class="std-lbl">Plan</div><div class="std-text">20 Trustle + 15 PP leads. Dedup vs 247 existing. Score ≥50 only.</div></div>
+        <div class="std-card"><div class="std-accent" style="background:var(--green)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--green);font-size:14px">◉</span><div><div class="std-name">Email Comms</div><div class="std-sub">Running</div></div></div><span class="chip ch-c" style="font-size:7px"><span class="dot"></span>NOW</span></div><div class="std-lbl">Plan</div><div class="std-text">FU-2 for 14 Trustle (Value-Add). FU-1 for 9 PP (Curious). 1 new campaign draft. All pending approval.</div></div>
+        <div class="std-card"><div class="std-accent" style="background:var(--purple)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--purple);font-size:14px">◇</span><div><div class="std-name">Blog Writer</div><div class="std-sub">Mon only</div></div></div><span class="chip ch-a" style="font-size:7px">MON</span></div><div class="std-lbl">Last Run (Mon 24 Mar)</div><div class="std-ok">✓ Published "AI for BAs" (PP) + "SaaS Sprawl" (Trustle). 1,180 avg words. Both approved.</div></div>
+      </div>
+    </div>
+
+    <!-- Activity Feed -->
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-label">// Activity Feed</span><span class="panel-action" onclick="nav('logs')">FULL LOGS →</span></div>
+      <div class="panel-body" style="padding:10px 14px">
+        <div class="feed-item"><div class="feed-dot" style="background:var(--cyan)"></div><div class="feed-line"></div><div class="feed-body"><div class="feed-text">Email Comms Agent started FU-2 batch drafting for Trustle (14 leads)</div><div class="feed-time">09:14:02 UTC</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--green)"></div><div class="feed-line"></div><div class="feed-body"><div class="feed-text">Lead Sourcer: 15 PP leads sourced · avg score 72 · 9 saved to internal CRM</div><div class="feed-time">08:01:33 UTC</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--green)"></div><div class="feed-line"></div><div class="feed-body"><div class="feed-text">Lead Sourcer: 20 Trustle leads sourced · avg score 74 · 14 saved to internal CRM</div><div class="feed-time">08:00:58 UTC</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--purple)"></div><div class="feed-line"></div><div class="feed-body"><div class="feed-text">Standup Agent: 7 morning plans published across all active agents</div><div class="feed-time">07:00:12 UTC</div></div></div>
+        <div class="feed-item"><div class="feed-dot" style="background:var(--red)"></div><div class="feed-body"><div class="feed-text" style="color:var(--red)">Developer Agent ERROR: GitHub API token expired — renewal required in Settings</div><div class="feed-time">Yesterday 09:04 UTC</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────── LEADS -->
+<div id="pg-leads" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// LEADS</div><div class="ph-title">Lead Pipeline</div></div><div class="ph-right"><button class="btn btn-ghost btn-sm">⬇ EXPORT CSV</button><button class="btn btn-c btn-sm">+ ADD LEAD</button></div></div>
+  <div class="g5">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Total Leads</div><div class="kpi-value kv-c">0,247</div><div class="kpi-delta du">▲ +35 this week</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Qualified (≥70)</div><div class="kpi-value kv-g">00,89</div><div class="kpi-delta du">▲ 36% of total</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">In Sequence</div><div class="kpi-value kv-a">00,74</div><div class="kpi-delta du">▲ 23 added today</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">Replied</div><div class="kpi-value kv-p">00,12</div><div class="kpi-delta du">▲ 16.2% rate</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--red)"></div><div class="kpi-label">Opted Out</div><div class="kpi-value kv-r">00,03</div><div class="kpi-delta dn">this month</div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr">
+      <span class="panel-label">// All Leads</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select class="fi" style="height:28px;padding:3px 8px;font-size:11px;width:130px"><option>All Products</option><option>Trustle</option><option>Process Pilots</option></select>
+        <select class="fi" style="height:28px;padding:3px 8px;font-size:11px;width:120px"><option>All Status</option><option>New</option><option>Contacted</option><option>Replied</option></select>
+        <input class="fi" placeholder="🔍  Search leads…" style="height:28px;padding:3px 8px;font-size:11px;width:170px">
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl tbl-cursor">
+        <thead><tr><th>LEAD</th><th>COMPANY</th><th>PRODUCT</th><th>SOURCE</th><th>SCORE</th><th>STATUS</th><th>SEQUENCE</th><th>LAST CONTACT</th><th>ACTIONS</th></tr></thead>
+        <tbody>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">Sarah Mitchell</div><div class="s">CISO</div></div></td><td class="nm">Accenture</td><td><span class="tag tag-c">Trustle</span></td><td class="mn">LinkedIn</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:87%;background:var(--green)"></div></div><span class="score-num" style="color:var(--green)">87</span></div></td><td><span class="chip ch-c"><span class="dot"></span>CONTACTED</span></td><td class="mn" style="color:var(--cyan)">FU-2 of 3</td><td class="mn">24 Mar</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">James O'Brien</div><div class="s">Freelance BA</div></div></td><td class="nm">Self-employed</td><td><span class="tag tag-p">Process Pilots</span></td><td class="mn">Reddit</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:72%;background:var(--green)"></div></div><span class="score-num" style="color:var(--green)">72</span></div></td><td><span class="chip ch-c"><span class="dot"></span>CONTACTED</span></td><td class="mn" style="color:var(--cyan)">FU-1 of 2</td><td class="mn">26 Mar</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">Priya Sharma</div><div class="s">IT Manager</div></div></td><td class="nm">HSBC</td><td><span class="tag tag-c">Trustle</span></td><td class="mn">LinkedIn</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:91%;background:var(--green)"></div></div><span class="score-num" style="color:var(--green)">91</span></div></td><td><span class="chip ch-g">REPLIED ✓</span></td><td class="mn" style="color:var(--green)">COMPLETE</td><td class="mn">25 Mar</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">Tom Hargreaves</div><div class="s">Scrum Master</div></div></td><td class="nm">ThoughtWorks</td><td><span class="tag tag-p">Process Pilots</span></td><td class="mn">HN</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:65%;background:var(--amber)"></div></div><span class="score-num" style="color:var(--amber)">65</span></div></td><td><span class="chip ch-a">CONTACTED</span></td><td class="mn" style="color:var(--purple)">FU-3 of 3</td><td class="mn">22 Mar</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">Anya Kowalski</div><div class="s">Product Manager</div></div></td><td class="nm">Deloitte</td><td><span class="tag tag-p">Process Pilots</span></td><td class="mn">Web</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:78%;background:var(--green)"></div></div><span class="score-num" style="color:var(--green)">78</span></div></td><td><span class="chip ch-p">NEW</span></td><td class="mn" style="color:var(--t3)">Not started</td><td class="mn">—</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">David Chen</div><div class="s">Head of IT</div></div></td><td class="nm">Barclays</td><td><span class="tag tag-c">Trustle</span></td><td class="mn">Channel Scout</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:84%;background:var(--green)"></div></div><span class="score-num" style="color:var(--green)">84</span></div></td><td><span class="chip ch-p">NEW</span></td><td class="mn" style="color:var(--t3)">Not started</td><td class="mn">—</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+          <tr onclick="openModal('modal-lead-detail')"><td><div class="cell-name"><div class="n">Lisa Park</div><div class="s">Business Analyst</div></div></td><td class="nm">NHS Digital</td><td><span class="tag tag-p">Process Pilots</span></td><td class="mn">LinkedIn</td><td><div class="score-wrap"><div class="score-bar"><div class="score-fill" style="width:55%;background:var(--amber)"></div></div><span class="score-num" style="color:var(--amber)">55</span></div></td><td><span class="chip ch-p">NEW</span></td><td class="mn" style="color:var(--t3)">Not started</td><td class="mn">—</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="padding:9px 14px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--b1)">
+      <span style="font-family:var(--fm);font-size:10px;color:var(--t3)">Showing 7 of 247 leads</span>
+      <div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs">← PREV</button><button class="btn btn-ghost btn-xs" style="background:var(--cyan-a05);border-color:var(--cyan-a20);color:var(--cyan)">1</button><button class="btn btn-ghost btn-xs">2</button><button class="btn btn-ghost btn-xs">3</button><button class="btn btn-ghost btn-xs">NEXT →</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- ───────────────────────────────────────── CAMPAIGNS -->
+<div id="pg-campaigns" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// CAMPAIGNS</div><div class="ph-title">Email Campaigns</div></div><div class="ph-right"><button class="btn btn-ghost btn-sm">FILTER</button><button class="btn btn-c btn-sm" onclick="nav('emailpreview')">👁 EMAIL PREVIEW</button></div></div>
+  <div class="g5">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Drafts (Awaiting)</div><div class="kpi-value kv-a">00,03</div><div class="kpi-delta dd">▼ needs approval</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Sent This Month</div><div class="kpi-value kv-c">1,089</div><div class="kpi-delta du">▲ +34 vs last</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Avg Open Rate</div><div class="kpi-value kv-g">31.4%</div><div class="kpi-delta dd">▼ −2.1%</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">Avg Reply Rate</div><div class="kpi-value kv-p">16.2%</div><div class="kpi-delta du">▲ +1.4%</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Active Sequences</div><div class="kpi-value kv-c">00,74</div><div class="kpi-delta du">▲ enrolments</div></div>
+  </div>
+  <div class="panel">
+    <div class="tabs" style="padding:0 14px">
+      <div class="tab on">All</div>
+      <div class="tab">Drafts <span style="background:var(--amber);color:var(--bg);font-family:var(--fm);font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:4px">3</span></div>
+      <div class="tab">Active Sequences</div>
+      <div class="tab">Sent</div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>CAMPAIGN</th><th>PRODUCT</th><th>STATUS</th><th>RECIPIENTS</th><th>OPEN RATE</th><th>REPLY RATE</th><th>FOLLOW-UPS</th><th>CREATED</th><th>ACTIONS</th></tr></thead>
+        <tbody>
+          <tr><td><div class="cell-name"><div class="n">IT Manager Outreach Oct</div><div class="s">Cold outreach · CISOs + IT managers</div></div></td><td><span class="tag tag-c">Trustle</span></td><td><span class="chip ch-a">DRAFT</span></td><td class="mn">18</td><td class="mn" style="color:var(--t3)">—</td><td class="mn" style="color:var(--t3)">—</td><td class="mn" style="color:var(--cyan)">FU × 3</td><td class="mn">26 Mar</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">👁 PREVIEW</button><button class="btn btn-g btn-xs">✓ APPROVE</button></div></td></tr>
+          <tr><td><div class="cell-name"><div class="n">BA Freelancer Cold Outreach</div><div class="s">B2C · freelance BAs and PMs</div></div></td><td><span class="tag tag-p">Process Pilots</span></td><td><span class="chip ch-a">DRAFT</span></td><td class="mn">15</td><td class="mn" style="color:var(--t3)">—</td><td class="mn" style="color:var(--t3)">—</td><td class="mn" style="color:var(--cyan)">FU × 2</td><td class="mn">26 Mar</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">👁 PREVIEW</button><button class="btn btn-g btn-xs">✓ APPROVE</button></div></td></tr>
+          <tr><td><div class="cell-name"><div class="n">SaaS Sprawl Awareness Campaign</div><div class="s">Warm follow-up · enterprise IT</div></div></td><td><span class="tag tag-c">Trustle</span></td><td><span class="chip ch-c">SENT</span></td><td class="mn">142</td><td class="mn" style="color:var(--green)">34.2%</td><td class="mn" style="color:var(--green)">18.1%</td><td class="mn" style="color:var(--cyan)">FU × 3</td><td class="mn">18 Mar</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">👁 PREVIEW</button><button class="btn btn-ghost btn-xs">ANALYTICS</button></div></td></tr>
+          <tr><td><div class="cell-name"><div class="n">Jira Integration Announcement</div><div class="s">Feature launch · warm list</div></div></td><td><span class="tag tag-p">Process Pilots</span></td><td><span class="chip ch-c">SENT</span></td><td class="mn">89</td><td class="mn" style="color:var(--green)">41.6%</td><td class="mn" style="color:var(--green)">22.4%</td><td class="mn" style="color:var(--amber)">FU × 1</td><td class="mn">14 Mar</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">👁 PREVIEW</button><button class="btn btn-ghost btn-xs">ANALYTICS</button></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────── EMAIL PREVIEW -->
+<div id="pg-emailpreview" class="page">
+  <div class="ph">
+    <div class="ph-left"><div class="ph-eye">// EMAIL PREVIEW</div><div class="ph-title">IT Manager Outreach — Trustle</div></div>
+    <div class="ph-right">
+      <button class="btn btn-ghost btn-sm" onclick="nav('campaigns')">← BACK</button>
+      <button class="btn btn-ghost btn-sm" id="btn-desk" onclick="setView('desktop')" style="border-color:var(--cyan);color:var(--cyan)">🖥 DESKTOP</button>
+      <button class="btn btn-ghost btn-sm" id="btn-mob" onclick="setView('mobile')">📱 MOBILE</button>
+      <button class="btn btn-ghost btn-sm" id="btn-dark" onclick="toggleDark()">🌙 DARK MODE</button>
+      <button class="btn btn-a btn-sm">📤 SEND TEST</button>
+    </div>
+  </div>
+
+  <div class="g2" style="align-items:start">
+    <!-- LEFT: meta + actions -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel">
+        <div class="panel-hdr"><span class="panel-label">// Email Metadata</span><span class="chip ch-g"><span class="dot"></span>SPF · DKIM · DMARC OK</span></div>
+        <div class="panel-body">
+          <div class="form-row" style="margin-bottom:10px">
+            <div class="form-g"><div class="fl">FROM</div><div style="font-size:12px;padding:4px 0;color:var(--t1)">outreach@trustle.io</div></div>
+            <div class="form-g"><div class="fl">RECIPIENTS</div><div style="font-size:12px;padding:4px 0;color:var(--cyan)">18 leads <span style="color:var(--t3)">· Trustle IT list</span></div></div>
+          </div>
+          <div class="form-g" style="margin-bottom:10px"><div class="fl">SUBJECT LINE — A/B TEST</div>
+            <div style="display:flex;flex-direction:column;gap:4px">
+              <div style="display:flex;gap:6px;align-items:center"><span style="font-family:var(--fm);font-size:9px;color:var(--green);width:18px">A</span><input class="fi" value="How Accenture cut SaaS spend by 34% (and how you can too)" style="font-size:11px"></div>
+              <div style="display:flex;gap:6px;align-items:center"><span style="font-family:var(--fm);font-size:9px;color:var(--cyan);width:18px">B</span><input class="fi" value="Your IT team is probably missing this one access audit" style="font-size:11px"></div>
+            </div>
+          </div>
+          <div class="form-g" style="margin-bottom:10px"><div class="fl">PREVIEW TEXT</div><input class="fi" value="A quick note from Trustle — we spotted something relevant to your team…"></div>
+          <div class="form-row">
+            <div class="form-g"><div class="fl">PERSONALISED AS</div><select class="fi fs" style="font-size:11px"><option>Sarah Mitchell (CISO · Accenture)</option><option>David Chen (Head of IT · Barclays)</option></select></div>
+            <div class="form-g"><div class="fl">SCHEDULED SEND</div><input class="fi" type="datetime-local" value="2026-03-27T09:00"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Follow-up config -->
+      <div class="panel">
+        <div class="panel-hdr"><span class="panel-label">// Follow-Up Sequence</span><span class="chip ch-c">3 FOLLOW-UPS</span></div>
+        <div class="panel-body">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="font-size:11px;color:var(--t2)">Follow-ups:</span>
+            <button class="btn btn-ghost btn-xs" style="padding:2px 10px">−</button>
+            <span style="font-family:var(--fm);font-size:20px;font-weight:700;color:var(--cyan);width:28px;text-align:center">3</span>
+            <button class="btn btn-ghost btn-xs" style="padding:2px 10px">+</button>
+            <div class="tog-row" style="margin-left:auto"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Stop on reply</span></div>
+            <div class="tog-row"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Require approval</span></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--green);border-radius:var(--r);padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-family:var(--fm);font-size:11px;color:var(--green);width:36px">FU-1</span><span style="font-size:11px;color:var(--t2)">Delay:</span><input class="fi" value="3" style="width:44px;padding:3px 6px;font-size:11px;text-align:center"><span style="font-size:11px;color:var(--t2)">days · Tone:</span><select class="fi fs" style="font-size:11px;width:110px"><option>Curious</option><option>Direct</option><option>Value-Add</option></select><span style="font-size:11px;color:var(--t2)">Thread:</span><select class="fi fs" style="font-size:11px;width:80px"><option>Same</option><option>New angle</option></select></div>
+            <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--cyan);border-radius:var(--r);padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-family:var(--fm);font-size:11px;color:var(--cyan);width:36px">FU-2</span><span style="font-size:11px;color:var(--t2)">Delay:</span><input class="fi" value="7" style="width:44px;padding:3px 6px;font-size:11px;text-align:center"><span style="font-size:11px;color:var(--t2)">days · Tone:</span><select class="fi fs" style="font-size:11px;width:110px"><option selected>Value-Add</option><option>Curious</option><option>Soft Close</option></select><span style="font-size:11px;color:var(--t2)">Thread:</span><select class="fi fs" style="font-size:11px;width:80px"><option>Same</option><option>New angle</option></select></div>
+            <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--purple);border-radius:var(--r);padding:8px 10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-family:var(--fm);font-size:11px;color:var(--purple);width:36px">FU-3</span><span style="font-size:11px;color:var(--t2)">Delay:</span><input class="fi" value="14" style="width:44px;padding:3px 6px;font-size:11px;text-align:center"><span style="font-size:11px;color:var(--t2)">days · Tone:</span><select class="fi fs" style="font-size:11px;width:110px"><option>Soft Close</option><option>Curious</option><option>Urgent</option></select><span style="font-size:11px;color:var(--t2)">Thread:</span><select class="fi fs" style="font-size:11px;width:80px"><option>Same</option><option>New angle</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Approval actions -->
+      <div class="panel">
+        <div class="panel-hdr"><span class="panel-label">// Approval Actions</span></div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+            <button class="btn btn-g" style="justify-content:center;padding:11px">✓ APPROVE &amp; SEND NOW</button>
+            <button class="btn btn-c" style="justify-content:center;padding:11px">📅 APPROVE &amp; SCHEDULE</button>
+            <button class="btn btn-a" style="justify-content:center;padding:11px">↩ REQUEST REVISION</button>
+            <button class="btn btn-r" style="justify-content:center;padding:11px">✕ REJECT</button>
+          </div>
+          <input class="fi" placeholder="Reason / note for agent — captured as Decision Memory…">
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: live preview -->
+    <div class="panel">
+      <div class="panel-hdr"><span class="panel-label">// Live Email Preview</span><span style="font-family:var(--fm);font-size:9px;color:var(--green)">● ACTUAL HTML RENDER</span></div>
+      <div style="padding:14px;display:flex;justify-content:center;background:var(--bg3)">
+        <div id="ep-container" style="width:600px;transition:width .3s ease;">
+          <div class="ep-chrome">
+            <div class="win-dots"><div class="wd" style="background:#ff5f57"></div><div class="wd" style="background:#ffbd2e"></div><div class="wd" style="background:#28ca42"></div><span style="margin-left:8px;font-size:10px;color:#64748b;font-family:system-ui">Gmail — Inbox</span></div>
+            <div class="from-line">Alex at Trustle &lt;outreach@trustle.io&gt;</div>
+            <div class="subj-line">How Accenture cut SaaS spend by 34% (and how you can too)</div>
+            <div class="prev-line">A quick note from Trustle — we spotted something relevant to your team…</div>
+          </div>
+          <div class="ep-body" id="ep-email-body">
+            <div class="ep-email-hdr" style="background:#1E3A5F">
+              <div style="font-family:Georgia,serif;font-size:22px;font-weight:700;color:#fff;letter-spacing:-.3px">Trustle</div>
+              <div style="font-size:11px;color:rgba(255,255,255,.55);margin-top:3px">Access Management for Modern IT Teams</div>
+            </div>
+            <div class="ep-email-body">
+              <p style="font-size:15px;font-weight:600;margin-bottom:14px">Hi Sarah,</p>
+              <p style="margin-bottom:13px">I noticed Accenture recently expanded its cloud stack — which typically means more SaaS tools, more access permissions, and more compliance headaches for your team.</p>
+              <p style="margin-bottom:13px">We recently helped a similar organisation <strong>reduce their SaaS access review time by 71%</strong> and cut tooling spend by £340k annually — simply by getting clear visibility on who had access to what.</p>
+              <p style="margin-bottom:22px">Trustle gives your IT team a single dashboard to audit, manage, and automatically revoke access across every SaaS tool — without chasing managers or running spreadsheets.</p>
+              <div style="text-align:center;margin:24px 0"><a style="display:inline-block;padding:13px 28px;background:#1E3A5F;color:#fff;text-decoration:none;font-weight:700;font-size:14px;border-radius:6px">See How It Works →</a></div>
+              <p style="font-size:13px;color:#64748b;border-top:1px solid #f1f5f9;padding-top:14px;margin-top:14px">Worth a 15-minute call? Happy to show exactly what we'd do for Accenture specifically.</p>
+              <p style="margin-top:14px;font-size:13px">Best,<br><strong>Alex, Trustle Team</strong></p>
+            </div>
+            <div class="ep-email-footer">
+              <div style="margin-bottom:7px"><a href="#" style="color:#94a3b8;text-decoration:none;margin:0 7px">Privacy Policy</a><a href="#" style="color:#94a3b8;text-decoration:none;margin:0 7px">Website</a><a href="#" style="color:#94a3b8;text-decoration:none;margin:0 7px">Contact</a></div>
+              <p>Trustle Ltd · 123 Tech Street, London EC2A 4AA, United Kingdom</p>
+              <p style="margin-top:5px">You received this because you may be a good fit for Trustle. <a href="#" style="color:#94a3b8">Unsubscribe</a></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────── FOLLOW-UPS -->
+<div id="pg-followups" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// FOLLOW-UPS</div><div class="ph-title">Active Sequences</div></div><div class="ph-right"><button class="btn btn-g btn-sm">✓ APPROVE ALL DUE</button></div></div>
+  <div class="g4">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Active</div><div class="kpi-value kv-c">74</div><div class="kpi-delta du">▲ in sequence</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Replied</div><div class="kpi-value kv-g">12</div><div class="kpi-delta du">▲ 16.2% rate</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Exhausted</div><div class="kpi-value kv-a">08</div><div class="kpi-delta dn">no response</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--red)"></div><div class="kpi-label">Due Today</div><div class="kpi-value kv-r">23</div><div class="kpi-delta dd">▼ awaiting approval</div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-hdr"><span class="panel-label">// Enrolment Tracker</span><span class="panel-action">VIEW ALL →</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>LEAD</th><th>PRODUCT</th><th>CAMPAIGN</th><th>STEP</th><th>TONE</th><th>STATUS</th><th>NEXT DUE</th><th>ACTIONS</th></tr></thead><tbody>
+      <tr><td><div class="cell-name"><div class="n">Sarah Mitchell</div><div class="s">CISO · Accenture</div></div></td><td><span class="tag tag-c">Trustle</span></td><td class="sm">IT Mgr Outreach</td><td><span class="chip ch-c">FU-2 of 3</span></td><td class="mn" style="color:var(--cyan)">VALUE-ADD</td><td><span class="chip ch-a">DUE TODAY</span></td><td class="mn">TODAY</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">PREVIEW</button><button class="btn btn-g btn-xs">APPROVE</button></div></td></tr>
+      <tr><td><div class="cell-name"><div class="n">James O'Brien</div><div class="s">Freelance BA</div></div></td><td><span class="tag tag-p">PP</span></td><td class="sm">BA Cold Outreach</td><td><span class="chip ch-a">FU-1 of 2</span></td><td class="mn" style="color:var(--amber)">CURIOUS</td><td><span class="chip ch-a">DUE TODAY</span></td><td class="mn">TODAY</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">PREVIEW</button><button class="btn btn-g btn-xs">APPROVE</button></div></td></tr>
+      <tr><td><div class="cell-name"><div class="n">Priya Sharma</div><div class="s">IT Mgr · HSBC</div></div></td><td><span class="tag tag-c">Trustle</span></td><td class="sm">SaaS Sprawl</td><td><span class="chip ch-g">REPLIED ✓</span></td><td class="mn" style="color:var(--green)">STOPPED</td><td><span class="chip ch-g">COMPLETE</span></td><td class="mn">—</td><td><button class="btn btn-ghost btn-xs">VIEW</button></td></tr>
+      <tr><td><div class="cell-name"><div class="n">Tom Hargreaves</div><div class="s">Scrum Master · TW</div></div></td><td><span class="tag tag-p">PP</span></td><td class="sm">BA Cold Outreach</td><td><span class="chip ch-p">FU-3 of 3</span></td><td class="mn" style="color:var(--purple)">SOFT CLOSE</td><td><span class="chip ch-n">30 MAR</span></td><td class="mn">30 Mar</td><td><div style="display:flex;gap:4px"><button class="btn btn-ghost btn-xs" onclick="nav('emailpreview')">PREVIEW</button><button class="btn btn-ghost btn-xs">STOP</button></div></td></tr>
+    </tbody></table></div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────── BLOG -->
+<div id="pg-blog" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// BLOG POSTS</div><div class="ph-title">Content Library</div></div><div class="ph-right"><button class="btn btn-ghost btn-sm">FILTER</button><button class="btn btn-c btn-sm">+ GENERATE POST</button></div></div>
+  <div class="g4">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Drafts</div><div class="kpi-value kv-a">02</div><div class="kpi-delta dd">▼ needs approval</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Published</div><div class="kpi-value kv-g">08</div><div class="kpi-delta du">▲ +2 this month</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Avg Word Count</div><div class="kpi-value kv-c">1,180</div><div class="kpi-delta dn">per post</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">SEO Optimised</div><div class="kpi-value kv-p">06</div><div class="kpi-delta du">▲ schema added</div></div>
+  </div>
+  <div class="panel">
+    <div class="tabs" style="padding:0 14px"><div class="tab on">All Posts</div><div class="tab">Drafts <span style="background:var(--amber);color:var(--bg);font-family:var(--fm);font-size:8px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:4px">2</span></div><div class="tab">Published</div><div class="tab">Archived</div></div>
+    <div style="padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div class="blog-card" style="border-left:3px solid var(--amber)"><div class="bc-top"><div><span class="bc-title">SaaS Sprawl — The Hidden IT Risk Most Companies Are Ignoring</span><div style="display:flex;gap:6px;align-items:center;margin-top:5px"><span class="tag tag-c">Trustle</span><span class="chip ch-a">DRAFT</span></div></div></div><div class="bc-excerpt">When IT teams can't see who has access to which tools, compliance becomes a nightmare. Here's how organisations are tackling SaaS sprawl in 2026 and the tools they're using…</div><div class="bc-meta"><span>1,240 words</span><span>KW: SaaS sprawl, access management</span><span>26 Mar 2026</span></div><div class="bc-btns"><button class="btn btn-ghost btn-xs">READ DRAFT</button><button class="btn btn-g btn-xs">✓ APPROVE</button></div></div>
+      <div class="blog-card" style="border-left:3px solid var(--amber)"><div class="bc-top"><div><span class="bc-title">5 Ways AI Is Changing How Business Analysts Write Requirements</span><div style="display:flex;gap:6px;align-items:center;margin-top:5px"><span class="tag tag-p">Process Pilots</span><span class="chip ch-a">DRAFT</span></div></div></div><div class="bc-excerpt">Business analysts are notoriously time-starved. AI document generation tools are changing the game — but only if you know how to use them effectively and avoid the common pitfalls…</div><div class="bc-meta"><span>1,100 words</span><span>KW: AI for BAs, BRD automation</span><span>26 Mar 2026</span></div><div class="bc-btns"><button class="btn btn-ghost btn-xs">READ DRAFT</button><button class="btn btn-g btn-xs">✓ APPROVE</button></div></div>
+      <div class="blog-card" style="border-left:3px solid var(--green)"><div class="bc-top"><div><span class="bc-title">Why Your IT Team Needs an Access Management Strategy in 2026</span><div style="display:flex;gap:6px;align-items:center;margin-top:5px"><span class="tag tag-c">Trustle</span><span class="chip ch-g">PUBLISHED</span></div></div></div><div class="bc-excerpt">With the average company using 130+ SaaS apps, access management is no longer optional. Here's your complete 2026 playbook for IT teams at growing companies…</div><div class="bc-meta"><span>1,320 words</span><span>Pos: #4 · 2,100 impressions</span><span>18 Mar 2026</span></div><div class="bc-btns"><button class="btn btn-ghost btn-xs">VIEW LIVE</button><button class="btn btn-ghost btn-xs">SEO DATA</button></div></div>
+      <div class="blog-card" style="border-left:3px solid var(--green)"><div class="bc-top"><div><span class="bc-title">How to Write a BRD in Under 10 Minutes with AI</span><div style="display:flex;gap:6px;align-items:center;margin-top:5px"><span class="tag tag-p">Process Pilots</span><span class="chip ch-g">PUBLISHED</span></div></div></div><div class="bc-excerpt">BRDs used to take hours. With Process Pilots AI document generation, the same output takes under 10 minutes. Here's exactly how to get there step by step…</div><div class="bc-meta"><span>980 words</span><span>Pos: #7 · 1,450 impressions</span><span>14 Mar 2026</span></div><div class="bc-btns"><button class="btn btn-ghost btn-xs">VIEW LIVE</button><button class="btn btn-ghost btn-xs">SEO DATA</button></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────── SEO -->
+<div id="pg-seo" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// SEO</div><div class="ph-title">Search Optimisation</div></div><div class="ph-right"><select class="fi fs" style="height:32px;font-size:12px"><option>Trustle</option><option>Process Pilots</option></select><button class="btn btn-c btn-sm">▶ RUN AUDIT</button></div></div>
+  <div class="g4">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Avg Position</div><div class="kpi-value kv-c">6.4</div><div class="kpi-delta du">▲ +1.2 this week</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Impressions (7d)</div><div class="kpi-value kv-g">8,340</div><div class="kpi-delta du">▲ +12%</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Clicks (7d)</div><div class="kpi-value kv-a">0,412</div><div class="kpi-delta du">▲ +8%</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--red)"></div><div class="kpi-label">Open Actions</div><div class="kpi-value kv-r">07</div><div class="kpi-delta dd">▼ high priority</div></div>
+  </div>
+  <div class="g2">
+    <div class="panel"><div class="panel-hdr"><span class="panel-label">// Top Ranking Pages — Trustle</span></div><div style="padding:10px 14px">
+      <div class="rank-row"><div class="rank-n" style="color:var(--green)">4</div><div class="rank-info"><div class="rank-url">trustle.io/blog/access-management-2026</div><div class="rank-title">Why Your IT Team Needs an Access Management Strategy</div></div><div class="rank-stats"><div class="rank-stat">Impr: <b>2,100</b></div><div class="rank-stat">Clicks: <b>142</b></div><div class="rank-stat">CTR: <b>6.8%</b></div></div></div>
+      <div class="rank-row"><div class="rank-n" style="color:var(--green)">7</div><div class="rank-info"><div class="rank-url">trustle.io/blog/saas-sprawl-cost</div><div class="rank-title">The Real Cost of SaaS Sprawl for IT Teams</div></div><div class="rank-stats"><div class="rank-stat">Impr: <b>1,840</b></div><div class="rank-stat">Clicks: <b>98</b></div><div class="rank-stat">CTR: <b>5.3%</b></div></div></div>
+      <div class="rank-row"><div class="rank-n" style="color:var(--amber)">14</div><div class="rank-info"><div class="rank-url">trustle.io/blog/saas-access-audit</div><div class="rank-title">How to Conduct a SaaS Access Audit</div></div><div class="rank-stats"><div class="rank-stat">Impr: <b>920</b></div><div class="rank-stat">Clicks: <b>34</b></div><div class="rank-stat">CTR: <b>3.7%</b></div></div></div>
+      <div class="rank-row"><div class="rank-n" style="color:var(--amber)">18</div><div class="rank-info"><div class="rank-url">trustle.io/features</div><div class="rank-title">Trustle Features — Access Management Platform</div></div><div class="rank-stats"><div class="rank-stat">Impr: <b>640</b></div><div class="rank-stat">Clicks: <b>22</b></div><div class="rank-stat">CTR: <b>3.4%</b></div></div></div>
+      <div class="rank-row"><div class="rank-n" style="color:var(--red)">31</div><div class="rank-info"><div class="rank-url">trustle.io/pricing</div><div class="rank-title">Trustle Pricing Plans</div></div><div class="rank-stats"><div class="rank-stat">Impr: <b>410</b></div><div class="rank-stat">Clicks: <b>12</b></div><div class="rank-stat">CTR: <b>2.9%</b></div></div></div>
+    </div></div>
+    <div class="panel"><div class="panel-hdr"><span class="panel-label">// SEO Recommendations</span><span class="chip ch-r">3 HIGH PRIORITY</span></div><div style="padding:10px 14px;display:flex;flex-direction:column;gap:7px">
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--red);border-radius:var(--r);padding:9px 11px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--red)">HIGH · TECHNICAL</span><button class="btn btn-g btn-xs">APPLY</button></div><div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:3px">Add JSON-LD schema to /blog/access-management-2026</div><div style="font-size:10px;color:var(--t3)">BlogPosting schema enables rich results · estimated +20–35% CTR improvement</div></div>
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--red);border-radius:var(--r);padding:9px 11px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--red)">HIGH · CONTENT GAP</span><button class="btn btn-c btn-xs">GENERATE</button></div><div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:3px">Missing page: "SaaS access control checklist"</div><div style="font-size:10px;color:var(--t3)">2,400 mo searches · competitors at pos 1–3 · no existing page targeting this</div></div>
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--amber);border-radius:var(--r);padding:9px 11px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--amber)">MEDIUM · ON-PAGE</span><button class="btn btn-a btn-xs">UPDATE</button></div><div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:3px">Improve meta description for /pricing (too short: 76 chars)</div><div style="font-size:10px;color:var(--t3)">Recommended 140–160 chars for full SERP visibility</div></div>
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--green);border-radius:var(--r);padding:9px 11px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;letter-spacing:.08em;color:var(--green)">LOW · BACKLINKS</span><button class="btn btn-ghost btn-xs">VIEW</button></div><div style="font-size:12px;font-weight:500;color:var(--t1);margin-bottom:3px">3 backlink targets: DA 45–62 IT security blogs</div><div style="font-size:10px;color:var(--t3)">Outreach drafts ready for your approval</div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────── INTELLIGENCE -->
+<div id="pg-intelligence" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// INTELLIGENCE</div><div class="ph-title">Channel Scout Feed</div></div><div class="ph-right"><select class="fi fs" style="height:32px;font-size:12px"><option>All Products</option><option>Trustle</option><option>Process Pilots</option></select><select class="fi fs" style="height:32px;font-size:12px"><option>All Categories</option><option>Pain Points</option><option>Competitors</option><option>High Intent</option><option>Trending</option></select><button class="btn btn-c btn-sm">▶ RUN SCOUT</button></div></div>
+  <div class="g5">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Findings (7d)</div><div class="kpi-value kv-c">00,18</div><div class="kpi-delta du">▲ +6 since last</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--red)"></div><div class="kpi-label">Pain Points</div><div class="kpi-value kv-r">07</div><div class="kpi-delta dn">actionable</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Warm Leads</div><div class="kpi-value kv-a">04</div><div class="kpi-delta du">▲ high intent</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">Competitor Mentions</div><div class="kpi-value kv-p">03</div><div class="kpi-delta dn">monitored</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Trending Topics</div><div class="kpi-value kv-g">04</div><div class="kpi-delta du">▲ gaining volume</div></div>
+  </div>
+  <div class="gc-7-5">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Intelligence Feed</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">26 MAR 2026</span></div><div style="padding:10px 14px">
+        <div class="intel-card" style="border-left:3px solid var(--red)"><div class="ic-top"><div class="ic-meta"><span style="font-family:var(--fm);font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--red-a10);border:1px solid var(--red-a20);color:var(--red);letter-spacing:.07em">PAIN POINT</span><span class="ic-channel">reddit · r/sysadmin</span><span class="ic-rel" style="color:var(--green)">94</span></div><span class="tag tag-c">Trustle</span></div><div class="ic-title">"Anyone else drowning in SaaS access reviews? 200+ tools and no way to audit"</div><div class="ic-body">Thread with 47 comments. IT manager describes exact Trustle use case: no visibility, manual spreadsheet process, compliance audit approaching. High-intent purchase signal from verified sysadmin account.</div><div class="ic-actions"><button class="btn btn-g btn-xs">+ ADD AS LEAD</button><button class="btn btn-ghost btn-xs">VIEW POST</button><button class="btn btn-c btn-xs">FEED TO EMAIL</button></div></div>
+        <div class="intel-card" style="border-left:3px solid var(--amber)"><div class="ic-top"><div class="ic-meta"><span style="font-family:var(--fm);font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--amber-a10);border:1px solid var(--amber-a20);color:var(--amber);letter-spacing:.07em">TRENDING</span><span class="ic-channel">hacker news</span><span class="ic-rel" style="color:var(--amber)">81</span></div><span class="tag tag-p">PP</span></div><div class="ic-title">"AI documentation tools for software teams — what are you using?" (Ask HN)</div><div class="ic-body">65+ comments discussing documentation automation tools. Process Pilots not yet mentioned — opportunity to join thread or write a targeted response post. Keywords gaining volume this week.</div><div class="ic-actions"><button class="btn btn-c btn-xs">DRAFT REPLY</button><button class="btn btn-ghost btn-xs">VIEW POST</button><button class="btn btn-a btn-xs">FEED TO BLOG</button></div></div>
+        <div class="intel-card" style="border-left:3px solid var(--purple)"><div class="ic-top"><div class="ic-meta"><span style="font-family:var(--fm);font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:var(--purple-a10);border:1px solid var(--purple-a20);color:var(--purple);letter-spacing:.07em">COMPETITOR</span><span class="ic-channel">X / Twitter</span><span class="ic-rel" style="color:var(--purple)">76</span></div><span class="tag tag-c">Trustle</span></div><div class="ic-title">Thread criticising Okta pricing: "£45k/year for basic SSO is insane for our scale"</div><div class="ic-body">14 replies, 340 likes. Multiple users asking for alternatives. Strong positioning opportunity for Trustle as cost-effective alternative below enterprise SSO price point.</div><div class="ic-actions"><button class="btn btn-a btn-xs">FEED TO EMAIL</button><button class="btn btn-ghost btn-xs">VIEW POST</button></div></div>
+      </div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Warm Leads</span><span style="background:var(--amber);color:var(--bg);font-family:var(--fm);font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px">4</span></div><div style="padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+        <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--green);border-radius:var(--r);padding:8px 10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--t1)">u/itmanager_uk</span><button class="btn btn-g btn-xs">+ ADD LEAD</button></div><div style="font-size:10px;color:var(--t3);margin-bottom:5px">r/sysadmin · 47 comments · "drowning in SaaS access reviews"</div><div style="display:flex;gap:4px;flex-wrap:wrap"><span class="chip ch-a" style="font-size:7.5px">HIGH INTENT</span><span class="chip ch-c" style="font-size:7.5px">B2B</span><span class="tag tag-c" style="font-size:9px">Trustle</span></div></div>
+        <div style="background:var(--bg3);border:1px solid var(--b1);border-left:3px solid var(--amber);border-radius:var(--r);padding:8px 10px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:12px;font-weight:500;color:var(--t1)">@david_pm_london</span><button class="btn btn-g btn-xs">+ ADD LEAD</button></div><div style="font-size:10px;color:var(--t3);margin-bottom:5px">X · "Looking for AI tool to speed up user story writing"</div><div style="display:flex;gap:4px;flex-wrap:wrap"><span class="chip ch-a" style="font-size:7.5px">HIGH INTENT</span><span class="chip ch-c" style="font-size:7.5px">B2B</span><span class="tag tag-p" style="font-size:9px">PP</span></div></div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Trending Topics</span></div><div style="padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--t1)">SaaS access management</span><div style="display:flex;gap:8px;align-items:center"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:82%;background:var(--green)"></div></div><span style="font-family:var(--fm);font-size:9px;color:var(--green)">▲ 34%</span></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--t1)">AI documentation tools</span><div style="display:flex;gap:8px;align-items:center"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:71%;background:var(--green)"></div></div><span style="font-family:var(--fm);font-size:9px;color:var(--green)">▲ 28%</span></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--t1)">BRD automation</span><div style="display:flex;gap:8px;align-items:center"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:55%;background:var(--amber)"></div></div><span style="font-family:var(--fm);font-size:9px;color:var(--amber)">▲ 19%</span></div></div>
+        <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12px;color:var(--t1)">ITSM cost reduction</span><div style="display:flex;gap:8px;align-items:center"><div class="prog-bar" style="width:70px"><div class="prog-fill" style="width:40%;background:var(--amber)"></div></div><span style="font-family:var(--fm);font-size:9px;color:var(--amber)">▲ 12%</span></div></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ────────────────────────────────────────── MEMORY -->
+<div id="pg-memory" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// MEMORY</div><div class="ph-title">Agent Memory Bank</div></div><div class="ph-right"><select class="fi fs" style="height:32px;font-size:12px"><option>All Agents</option><option>Lead Sourcer</option><option>Email Comms</option><option>Blog Writer</option><option>Channel Scout</option></select><select class="fi fs" style="height:32px;font-size:12px"><option>All Types</option><option>Action</option><option>Decision</option><option>Intelligence</option></select></div></div>
+  <div class="g3">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Total Memories</div><div class="kpi-value kv-c">0,284</div><div class="kpi-delta du">▲ +12 today</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Decision Memories</div><div class="kpi-value kv-g">00,47</div><div class="kpi-delta dn">your preferences</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">Intelligence Memories</div><div class="kpi-value kv-p">00,89</div><div class="kpi-delta dn">market signals</div></div>
+  </div>
+  <div class="g2">
+    <div class="panel"><div class="panel-hdr"><span class="panel-label">// Recent Memories</span><span class="panel-action">SEMANTIC SEARCH →</span></div><div style="padding:10px 12px">
+      <div class="mem-card"><div class="mc-top"><div class="mc-left"><span class="mc-type mct-decision">DECISION</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Email Comms · Trustle</span></div><div class="mc-imp">★ Imp: 5</div></div><div class="mc-body">Admin rejected email subject containing the word "FREE". Note: "Sounds spammy for enterprise audience." Never use this word in Trustle email subject lines.</div><div class="mc-foot"><span>26 Mar 2026</span><span>Retrieved 3× this week</span><span>Never expires</span></div></div>
+      <div class="mem-card"><div class="mc-top"><div class="mc-left"><span class="mc-type mct-decision">DECISION</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Email Comms · Trustle</span></div><div class="mc-imp">★ Imp: 4</div></div><div class="mc-body">Admin approved: "How Accenture cut SaaS spend by 34% (and how you can too)". ROI framing with named enterprise reference performs well. Use this pattern for Trustle subject lines.</div><div class="mc-foot"><span>25 Mar 2026</span><span>Retrieved 5× this week</span><span>Never expires</span></div></div>
+      <div class="mem-card"><div class="mc-top"><div class="mc-left"><span class="mc-type mct-intel">INTELLIGENCE</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Channel Scout · Trustle</span></div><div class="mc-imp">★ Imp: 4</div></div><div class="mc-body">Reddit r/sysadmin: recurring pain point — SaaS access audit difficulty. 3 separate threads this week. High volume suggests strong market signal. Reference this in outreach copy.</div><div class="mc-foot"><span>26 Mar 2026</span><span>Expires: 25 Apr 2026</span></div></div>
+      <div class="mem-card"><div class="mc-top"><div class="mc-left"><span class="mc-type mct-action">ACTION</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Lead Sourcer · Trustle</span></div><div class="mc-imp">★ Imp: 3</div></div><div class="mc-body">26 Mar: Sourced 20 leads. Top source: LinkedIn CISO search, UK fintech 200–500 employees. Avg score 74/100. 14 saved to internal CRM. 2 duplicates skipped via contacts table.</div><div class="mc-foot"><span>26 Mar 2026</span><span>Run #47</span></div></div>
+    </div></div>
+    <div class="panel"><div class="panel-hdr"><span class="panel-label">// Memory Health by Agent</span></div><div style="padding:10px 12px;display:flex;flex-direction:column;gap:7px">
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:500;color:var(--t1)">Lead Sourcing Agent</span><span class="chip ch-g">HEALTHY</span></div><div style="display:flex;gap:14px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Action: <span style="color:var(--cyan)">48</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Decision: <span style="color:var(--green)">12</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Intel: <span style="color:var(--purple)">22</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last: <span style="color:var(--t1)">today</span></span></div></div>
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:500;color:var(--t1)">Email Comms Agent</span><span class="chip ch-g">HEALTHY</span></div><div style="display:flex;gap:14px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Action: <span style="color:var(--cyan)">52</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Decision: <span style="color:var(--green)">18</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Intel: <span style="color:var(--purple)">14</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last: <span style="color:var(--t1)">today</span></span></div></div>
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:500;color:var(--t1)">Blog Content Agent</span><span class="chip ch-a">GROWING</span></div><div style="display:flex;gap:14px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Action: <span style="color:var(--cyan)">18</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Decision: <span style="color:var(--green)">7</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Intel: <span style="color:var(--purple)">31</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last: <span style="color:var(--t1)">6d ago</span></span></div></div>
+      <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="font-size:12px;font-weight:500;color:var(--t1)">Channel Scout</span><span class="chip ch-a">GROWING</span></div><div style="display:flex;gap:14px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Action: <span style="color:var(--cyan)">9</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Decision: <span style="color:var(--green)">2</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Intel: <span style="color:var(--purple)">22</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last: <span style="color:var(--t1)">2d ago</span></span></div></div>
+    </div></div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────── AGENT LOGS -->
+<div id="pg-logs" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// AGENT LOGS</div><div class="ph-title">Run History</div></div><div class="ph-right"><select class="fi fs" style="height:32px;font-size:12px"><option>All Agents</option></select><select class="fi fs" style="height:32px;font-size:12px"><option>All Status</option></select><select class="fi fs" style="height:32px;font-size:12px"><option>All Products</option></select></div></div>
+  <div class="panel">
+    <div class="panel-hdr"><span class="panel-label">// Log Entries</span>
+      <div style="display:flex;gap:10px;align-items:center"><span style="font-family:var(--fm);font-size:10px;color:var(--t3)">Today: <span style="color:var(--green)">$0.051</span> · Month: <span style="color:var(--cyan)">$4.82</span> / $50.00</span><span style="font-family:var(--fm);font-size:10px;color:var(--t3)">1,847 total entries</span></div>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl tbl-cursor">
+        <thead><tr><th>TIME</th><th>AGENT</th><th>PRODUCT</th><th>TYPE</th><th>STATUS</th><th>DURATION</th><th>RECORDS</th><th>AI COST</th><th>SUMMARY</th><th></th></tr></thead>
+        <tbody>
+          <tr onclick="expandLog(this)"><td class="mn">09:14:02</td><td class="nm">Email Comms</td><td><span class="tag tag-c" style="font-size:9px">Trustle</span></td><td><span class="chip ch-a" style="font-size:7px">FOLLOW-UP</span></td><td><span class="chip ch-c" style="font-size:7px"><span class="dot"></span>RUNNING</span></td><td class="mn">—</td><td class="mn">—</td><td class="mn" style="color:var(--green)">$0.003</td><td style="font-size:11px;color:var(--t3)">Drafting FU-2 batch for 14 leads — Value-Add tone</td><td><button class="btn btn-ghost btn-xs">▼</button></td></tr>
+          <tr onclick="expandLog(this)"><td class="mn">08:01:33</td><td class="nm">Lead Sourcer</td><td><span class="tag tag-p" style="font-size:9px">PP</span></td><td><span class="chip ch-n" style="font-size:7px">SCHEDULED</span></td><td><span class="chip ch-g" style="font-size:7px">SUCCESS</span></td><td class="mn">14.2s</td><td class="mn">15</td><td class="mn" style="color:var(--green)">$0.009</td><td style="font-size:11px;color:var(--t3)">15 leads sourced · 9 saved to internal CRM · avg score 72</td><td><button class="btn btn-ghost btn-xs">▼</button></td></tr>
+          <tr onclick="expandLog(this)"><td class="mn">08:00:58</td><td class="nm">Lead Sourcer</td><td><span class="tag tag-c" style="font-size:9px">Trustle</span></td><td><span class="chip ch-n" style="font-size:7px">SCHEDULED</span></td><td><span class="chip ch-g" style="font-size:7px">SUCCESS</span></td><td class="mn">18.7s</td><td class="mn">20</td><td class="mn" style="color:var(--green)">$0.012</td><td style="font-size:11px;color:var(--t3)">20 leads sourced · 14 saved to internal CRM · avg score 74</td><td><button class="btn btn-ghost btn-xs">▼</button></td></tr>
+          <tr onclick="expandLog(this)"><td class="mn">07:00:12</td><td class="nm">Standup Agent</td><td><span style="font-size:10px;color:var(--t3)">All</span></td><td><span class="chip ch-p" style="font-size:7px">STANDUP</span></td><td><span class="chip ch-g" style="font-size:7px">SUCCESS</span></td><td class="mn">4.1s</td><td class="mn">7</td><td class="mn" style="color:var(--green)">$0.002</td><td style="font-size:11px;color:var(--t3)">7 morning plans published across all active agents</td><td><button class="btn btn-ghost btn-xs">▼</button></td></tr>
+          <tr onclick="expandLog(this)" style="background:rgba(255,61,90,.025)"><td class="mn">Yesterday</td><td class="nm">Developer</td><td><span style="font-size:10px;color:var(--t3)">Platform</span></td><td><span class="chip ch-n" style="font-size:7px">SCHEDULED</span></td><td><span class="chip ch-r" style="font-size:7px">ERROR</span></td><td class="mn">2.3s</td><td class="mn">0</td><td class="mn" style="color:var(--green)">$0.001</td><td style="font-size:11px;color:var(--red)">✗ GitHub API token expired — renewal required</td><td><button class="btn btn-r btn-xs">FIX</button></td></tr>
+          <tr onclick="expandLog(this)"><td class="mn">Yesterday</td><td class="nm">Channel Scout</td><td><span style="font-size:10px;color:var(--t3)">All</span></td><td><span class="chip ch-n" style="font-size:7px">SCHEDULED</span></td><td><span class="chip ch-g" style="font-size:7px">SUCCESS</span></td><td class="mn">42.8s</td><td class="mn">18</td><td class="mn" style="color:var(--green)">$0.024</td><td style="font-size:11px;color:var(--t3)">18 findings across 4 channels · 4 warm leads identified</td><td><button class="btn btn-ghost btn-xs">▼</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────── STANDUPS -->
+<div id="pg-standups" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// STANDUPS</div><div class="ph-title">Daily Briefings</div></div><div class="ph-right"><button class="btn btn-ghost btn-sm">← 25 MAR</button><button class="btn btn-c btn-sm" style="pointer-events:none">26 MAR 2026</button><button class="btn btn-ghost btn-sm" style="opacity:.4">27 MAR →</button></div></div>
+  <div class="info-box">All agents publish their plan at 07:00 UTC before any work begins. Evening actuals update at 22:00 UTC. The gap between plan and actual forms your daily accountability record.</div>
+  <div class="g3" style="gap:10px">
+    <div class="std-card"><div class="std-accent" style="background:var(--cyan)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--cyan);font-size:16px">◈</span><div><div class="std-name">Lead Sourcing</div><div class="std-sub">All Products</div></div></div><span class="chip ch-c" style="font-size:7px"><span class="dot"></span>RUNNING</span></div><div class="std-lbl">Morning Plan</div><div class="std-text">Source 20 Trustle B2B leads (CISOs, IT Mgrs, 50–500 employees). Source 15 PP B2C leads (freelance BAs). Flag 3 stale contacts to Email Agent. Dedup check vs 247 existing leads.</div><div class="std-div"></div><div class="std-lbl">Evening Actuals (22:00)</div><div style="font-size:10px;color:var(--t4);font-style:italic">Pending…</div></div>
+    <div class="std-card"><div class="std-accent" style="background:var(--green)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--green);font-size:16px">◉</span><div><div class="std-name">Email Comms</div><div class="std-sub">All Products</div></div></div><span class="chip ch-c" style="font-size:7px"><span class="dot"></span>RUNNING</span></div><div class="std-lbl">Morning Plan</div><div class="std-text">FU-2 for 14 Trustle leads (Value-Add). FU-1 for 9 PP leads (Curious). New BA campaign draft. All 3 batches pending Admin approval. Nothing sends without approval.</div><div class="std-div"></div><div class="std-lbl">Evening Actuals (22:00)</div><div style="font-size:10px;color:var(--t4);font-style:italic">Pending…</div></div>
+    <div class="std-card"><div class="std-accent" style="background:var(--purple)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--purple);font-size:16px">◇</span><div><div class="std-name">Blog Writer</div><div class="std-sub">Mon only</div></div></div><span class="chip ch-a" style="font-size:7px">MON ONLY</span></div><div class="std-lbl">Last Run (Mon 24 Mar)</div><div class="std-ok">✓ Published "AI for BAs" (PP, 1,100w, approved) + "SaaS Sprawl" (Trustle, 1,240w, approved). Both include JSON-LD schema. Next: Mon 31 Mar 07:00.</div></div>
+    <div class="std-card"><div class="std-accent" style="background:var(--red)"></div><div class="std-head"><div class="std-agent"><span style="color:var(--amber);font-size:16px">◆</span><div><div class="std-name">Dev / QA</div><div class="std-sub">Platform</div></div></div><span class="chip ch-r" style="font-size:7px">ERROR</span></div><div class="std-lbl">Last Run (Sun 24 Mar)</div><div class="std-err">✗ GitHub API token expired. Attempted QA sweep — could not post PR. Error logged. Awaiting token renewal from Admin in Settings → Dev Credentials.</div></div>
+    <div class="std-card"><div class="std-accent" style="background:#34D399"></div><div class="std-head"><div class="std-agent"><span style="font-size:16px">🌐</span><div><div class="std-name">SEO Agent</div><div class="std-sub">All Products</div></div></div><span class="chip ch-n" style="font-size:7px">WED ONLY</span></div><div class="std-lbl">Last Run (Wed 22 Mar)</div><div class="std-ok">✓ 4 keyword gaps found for Trustle. 3 schema blocks generated. 1 backlink outreach drafted. Avg position improved 7.8→6.4. Next: Wed 29 Mar 06:00.</div></div>
+    <div class="std-card"><div class="std-accent" style="background:var(--rose,#FF5FA0)"></div><div class="std-head"><div class="std-agent"><span style="font-size:16px">📡</span><div><div class="std-name">Channel Scout</div><div class="std-sub">All Products</div></div></div><span class="chip ch-n" style="font-size:7px">TUE/FRI</span></div><div class="std-lbl">Last Run (Tue 25 Mar)</div><div class="std-ok">✓ 18 findings across Reddit/HN/X/PH. 4 warm leads. 3 competitor mentions logged. Trending: SaaS access management +34%. All findings stored to Intelligence Memories.</div></div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────────── AGENTS -->
+<div id="pg-agents" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// AGENTS</div><div class="ph-title">Agent Management</div></div><div class="ph-right"><button class="btn btn-c btn-sm" onclick="openModal('modal-agent-builder')">+ CREATE CUSTOM AGENT</button></div></div>
+  <div class="divider"><div class="div-label">Built-In Agents</div><div class="div-line"></div></div>
+  <div class="g2">
+    <div class="panel" style="border-left:3px solid var(--cyan)"><div class="panel-hdr"><div style="display:flex;align-items:center;gap:8px"><div class="ar-dot run" style="background:var(--cyan)"></div><span style="font-size:14px;font-weight:600;color:var(--t1)">Lead Sourcing Agent</span></div><span class="chip ch-c"><span class="dot"></span>RUNNING</span></div><div class="panel-body"><div style="font-size:11px;color:var(--t2);margin-bottom:10px">Discovers qualified leads for all active products. Scores 0–100, writes to your Opsync CRM (leads &amp; contacts).</div><div style="display:flex;gap:14px;margin-bottom:10px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Model: <span style="color:var(--cyan)">gpt-4o-mini</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Schedule: <span style="color:var(--t1)">Daily 06:00</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Mem: <span style="color:var(--purple)">82</span></span></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="nav('logs')">LOGS</button><button class="btn btn-ghost btn-xs" onclick="nav('memory')">MEMORY</button><button class="btn btn-c btn-xs" style="margin-left:auto">▶ RUN NOW</button></div></div></div>
+    <div class="panel" style="border-left:3px solid var(--green)"><div class="panel-hdr"><div style="display:flex;align-items:center;gap:8px"><div class="ar-dot run" style="background:var(--green)"></div><span style="font-size:14px;font-weight:600;color:var(--t1)">Email Comms Agent</span></div><span class="chip ch-c"><span class="dot"></span>RUNNING</span></div><div class="panel-body"><div style="font-size:11px;color:var(--t2);margin-bottom:10px">Drafts HTML email campaigns and follow-up sequences. Manages lifecycle per product.</div><div style="display:flex;gap:14px;margin-bottom:10px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Model: <span style="color:var(--cyan)">gpt-4o-mini</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Schedule: <span style="color:var(--t1)">Daily 08:00</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Mem: <span style="color:var(--purple)">84</span></span></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="nav('logs')">LOGS</button><button class="btn btn-ghost btn-xs" onclick="nav('memory')">MEMORY</button><button class="btn btn-c btn-xs" style="margin-left:auto">▶ RUN NOW</button></div></div></div>
+    <div class="panel" style="border-left:3px solid var(--purple)"><div class="panel-hdr"><div style="display:flex;align-items:center;gap:8px"><div class="ar-dot" style="background:var(--green)"></div><span style="font-size:14px;font-weight:600;color:var(--t1)">Blog Content Agent</span></div><span class="chip ch-g">SUCCESS</span></div><div class="panel-body"><div style="font-size:11px;color:var(--t2);margin-bottom:10px">Generates SEO-optimised long-form blog posts per product. Saves as drafts for approval.</div><div style="display:flex;gap:14px;margin-bottom:10px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Model: <span style="color:var(--amber)">gpt-4o</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Schedule: <span style="color:var(--t1)">Mon 07:00</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Mem: <span style="color:var(--purple)">56</span></span></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="nav('logs')">LOGS</button><button class="btn btn-ghost btn-xs" onclick="nav('memory')">MEMORY</button><button class="btn btn-c btn-xs" style="margin-left:auto">▶ RUN NOW</button></div></div></div>
+    <div class="panel" style="border-left:3px solid var(--red)"><div class="panel-hdr"><div style="display:flex;align-items:center;gap:8px"><div class="ar-dot" style="background:var(--red)"></div><span style="font-size:14px;font-weight:600;color:var(--t1)">Developer / PO / QA</span></div><span class="chip ch-r">ERROR</span></div><div class="panel-body"><div class="error-box" style="margin-bottom:10px;font-size:11px">⚠ Last run failed: GitHub API token expired. Renew in Settings → Dev Credentials.</div><div style="display:flex;gap:14px;margin-bottom:10px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Model: <span style="color:var(--amber)">gpt-4o</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Schedule: <span style="color:var(--t1)">Sun 09:00</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Mem: <span style="color:var(--purple)">34</span></span></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="nav('logs')">LOGS</button><button class="btn btn-r btn-xs">VIEW ERROR</button><button class="btn btn-ghost btn-xs" style="margin-left:auto" onclick="nav('settings')">FIX →</button></div></div></div>
+    <div class="panel" style="border-left:3px solid #34D399"><div class="panel-hdr"><div style="display:flex;align-items:center;gap:8px"><div class="ar-dot" style="background:var(--green)"></div><span style="font-size:14px;font-weight:600;color:var(--t1)">SEO Agent</span></div><span class="chip ch-g">SUCCESS</span></div><div class="panel-body"><div style="font-size:11px;color:var(--t2);margin-bottom:10px">Keyword research, technical SEO, schema markup, rankings, backlink strategy per product.</div><div style="display:flex;gap:14px;margin-bottom:10px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Model: <span style="color:var(--cyan)">gpt-4o-mini</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Schedule: <span style="color:var(--t1)">Wed 06:00</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Mem: <span style="color:var(--purple)">44</span></span></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="nav('logs')">LOGS</button><button class="btn btn-ghost btn-xs" onclick="nav('memory')">MEMORY</button><button class="btn btn-c btn-xs" style="margin-left:auto">▶ RUN NOW</button></div></div></div>
+    <div class="panel" style="border-left:3px solid var(--rose,#FF5FA0)"><div class="panel-hdr"><div style="display:flex;align-items:center;gap:8px"><div class="ar-dot" style="background:var(--amber)"></div><span style="font-size:14px;font-weight:600;color:var(--t1)">Channel Scout Agent</span></div><span class="chip ch-a">SCHEDULED</span></div><div class="panel-body"><div style="font-size:11px;color:var(--t2);margin-bottom:10px">Monitors X, Reddit, HN, Product Hunt for market signals. Feeds intelligence to all agents.</div><div style="display:flex;gap:14px;margin-bottom:10px"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Model: <span style="color:var(--cyan)">gpt-4o-mini</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Schedule: <span style="color:var(--t1)">Tue/Fri 05:00</span></span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Mem: <span style="color:var(--purple)">33</span></span></div><div style="display:flex;gap:5px"><button class="btn btn-ghost btn-xs" onclick="nav('logs')">LOGS</button><button class="btn btn-ghost btn-xs" onclick="nav('memory')">MEMORY</button><button class="btn btn-c btn-xs" style="margin-left:auto">▶ RUN NOW</button></div></div></div>
+  </div>
+  <div class="divider"><div class="div-label">Custom Agents</div><div class="div-line"></div></div>
+  <div style="background:var(--surface);border:2px dashed var(--b2);border-radius:var(--r);padding:28px;text-align:center;cursor:pointer;transition:border-color .15s;" onclick="openModal('modal-agent-builder')" onmouseover="this.style.borderColor='var(--cyan3)'" onmouseout="this.style.borderColor='var(--b2)'">
+    <div style="font-size:28px;opacity:.3;margin-bottom:8px">+</div>
+    <div style="font-size:13px;color:var(--t3)">Create your first custom agent</div>
+    <div style="font-size:11px;color:var(--t4);margin-top:4px">Define a prompt, tool permissions, schedule and output type — no code required</div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────── SCHEDULER -->
+<div id="pg-scheduler" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// SCHEDULER</div><div class="ph-title">Agent Schedules</div></div><div class="ph-right"><button class="btn btn-ghost btn-sm">UPSTASH QSTASH ↗</button><button class="btn btn-c btn-sm">SAVE ALL CHANGES</button></div></div>
+  <div class="info-box">Dynamic schedules via Upstash QStash — changes take effect immediately, no deployment needed. Cron fields follow standard cron expression format.</div>
+  <div class="panel" style="margin-top:0">
+    <div class="panel-hdr"><span class="panel-label">// Schedule Matrix</span></div>
+    <div class="tbl-wrap"><table class="tbl"><thead><tr><th>AGENT</th><th>MODEL</th><th>TRUSTLE</th><th>PROCESS PILOTS</th><th>PLATFORM</th><th>NEXT RUN</th><th>LAST RUN</th><th>STATUS</th></tr></thead><tbody>
+      <tr><td class="nm">Lead Sourcing</td><td class="mn" style="color:var(--cyan)">gpt-4o-mini</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 6 * * *" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 6 * * *" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--amber)">23h 58m</td><td class="mn">08:00:58</td><td><span class="chip ch-g" style="font-size:7px">ACTIVE</span></td></tr>
+      <tr><td class="nm">Email Comms</td><td class="mn" style="color:var(--cyan)">gpt-4o-mini</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 8 * * *" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 8 * * *" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--cyan)">running</td><td class="mn">09:14:02</td><td><span class="chip ch-c" style="font-size:7px"><span class="dot"></span>RUNNING</span></td></tr>
+      <tr><td class="nm">Blog Writer</td><td class="mn" style="color:var(--amber)">gpt-4o</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 7 * * 1" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 7 * * 1" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--amber)">Mon 07:00</td><td class="mn">24 Mar</td><td><span class="chip ch-g" style="font-size:7px">ACTIVE</span></td></tr>
+      <tr><td class="nm">Dev / QA</td><td class="mn" style="color:var(--amber)">gpt-4o</td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--t4)">—</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 9 * * 0" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--red)">ERROR</td><td class="mn">25 Mar</td><td><span class="chip ch-r" style="font-size:7px">ERROR</span></td></tr>
+      <tr><td class="nm">SEO Agent</td><td class="mn" style="color:var(--cyan)">gpt-4o-mini</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 6 * * 3" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 6 * * 3" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--amber)">Wed 06:00</td><td class="mn">22 Mar</td><td><span class="chip ch-g" style="font-size:7px">ACTIVE</span></td></tr>
+      <tr><td class="nm">Channel Scout</td><td class="mn" style="color:var(--cyan)">gpt-4o-mini</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 5 * * 2,5" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 5 * * 2,5" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--amber)">Fri 05:00</td><td class="mn">25 Mar</td><td><span class="chip ch-a" style="font-size:7px">ACTIVE</span></td></tr>
+      <tr><td class="nm">Standup Agent</td><td class="mn" style="color:var(--cyan)">gpt-4o-mini</td><td class="mn" style="color:var(--t4)">—</td><td class="mn" style="color:var(--t4)">—</td><td><div style="display:flex;align-items:center;gap:6px"><input class="fi" value="0 7 * * *" style="width:108px;padding:3px 7px;font-size:10px;font-family:var(--fm)"><div class="tog on" onclick="this.classList.toggle('on')"></div></div></td><td class="mn" style="color:var(--amber)">07:00 UTC</td><td class="mn">today 07:00</td><td><span class="chip ch-g" style="font-size:7px">ACTIVE</span></td></tr>
+    </tbody></table></div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────── PRODUCTS -->
+<div id="pg-products" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// PRODUCTS</div><div class="ph-title">Product Registry</div></div><div class="ph-right"><button class="btn btn-c btn-sm" onclick="openModal('modal-add-product')">+ ADD PRODUCT</button></div></div>
+  <div class="g2">
+    <div class="prod-card"><div class="pc-top"><div class="pc-logo" style="background:#1E3A5F;color:#fff">TR</div><div class="pc-info"><div class="pc-name">Trustle</div><div class="pc-desc">Access management SaaS for IT teams — centralise and audit who has access to which SaaS tools.</div></div><span class="chip ch-g">ACTIVE</span></div><div class="pc-stats"><div class="pc-stat">Leads: <span>142</span></div><div class="pc-stat">Emails: <span>648</span></div><div class="pc-stat">Posts: <span>5</span></div><div class="pc-stat">Market: <span>B2B</span></div></div><div class="pc-foot"><button class="btn btn-ghost btn-xs">EDIT</button><button class="btn btn-ghost btn-xs" onclick="nav('branding')">BRANDING</button><button class="btn btn-ghost btn-xs" onclick="nav('seo')">SEO</button></div></div>
+    <div class="prod-card"><div class="pc-top"><div class="pc-logo" style="background:#6E2FA8;color:#fff">PP</div><div class="pc-info"><div class="pc-name">Process Pilots</div><div class="pc-desc">AI workspace for BAs, PMs, and Scrum Masters — generates BRDs, user stories, meeting summaries.</div></div><span class="chip ch-g">ACTIVE</span></div><div class="pc-stats"><div class="pc-stat">Leads: <span>105</span></div><div class="pc-stat">Emails: <span>441</span></div><div class="pc-stat">Posts: <span>3</span></div><div class="pc-stat">Market: <span>B2B+B2C</span></div></div><div class="pc-foot"><button class="btn btn-ghost btn-xs">EDIT</button><button class="btn btn-ghost btn-xs" onclick="nav('branding')">BRANDING</button><button class="btn btn-ghost btn-xs" onclick="nav('seo')">SEO</button></div></div>
+    <div style="background:var(--surface);border:2px dashed var(--b2);border-radius:var(--r);display:flex;align-items:center;justify-content:center;min-height:110px;cursor:pointer;transition:border-color .15s;" onclick="openModal('modal-add-product')" onmouseover="this.style.borderColor='var(--cyan3)'" onmouseout="this.style.borderColor='var(--b2)'"><div style="text-align:center;color:var(--t3)"><div style="font-size:26px;opacity:.3;margin-bottom:7px">+</div><div style="font-size:13px">Add New Product</div><div style="font-size:11px;color:var(--t4);margin-top:3px">All agents pick it up automatically</div></div></div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────── BRANDING -->
+<div id="pg-branding" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// PRODUCT BRANDING</div><div class="ph-title">Email Branding — Trustle</div></div><div class="ph-right"><select class="fi fs" style="height:32px;font-size:12px"><option>Trustle</option><option>Process Pilots</option></select><button class="btn btn-c btn-sm">SAVE BRANDING</button></div></div>
+  <div class="g2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Colours</span></div><div class="panel-body">
+        <div class="form-row" style="margin-bottom:10px"><div class="form-g"><div class="fl">Primary Colour</div><div style="display:flex;gap:7px;align-items:center;margin-top:4px"><div class="color-dot" style="background:#1E3A5F"></div><input class="fi" value="#1E3A5F"></div></div><div class="form-g"><div class="fl">Secondary Colour</div><div style="display:flex;gap:7px;align-items:center;margin-top:4px"><div class="color-dot" style="background:#0099BB"></div><input class="fi" value="#0099BB"></div></div></div>
+        <div class="form-row"><div class="form-g"><div class="fl">Background</div><div style="display:flex;gap:7px;align-items:center;margin-top:4px"><div class="color-dot" style="background:#F8FAFC;border:1px solid #e2e8f0"></div><input class="fi" value="#F8FAFC"></div></div><div class="form-g"><div class="fl">Text Colour</div><div style="display:flex;gap:7px;align-items:center;margin-top:4px"><div class="color-dot" style="background:#1E293B"></div><input class="fi" value="#1E293B"></div></div></div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Logo & Typography</span></div><div class="panel-body">
+        <div class="form-g" style="margin-bottom:10px"><div class="fl">Logo Upload</div><div style="border:2px dashed var(--b2);border-radius:var(--r);padding:16px;text-align:center;cursor:pointer;color:var(--t3);margin-top:4px"><div style="font-size:20px;margin-bottom:4px;opacity:.4">📁</div><div style="font-size:11px">Click or drag &amp; drop · SVG/PNG · transparent bg</div></div></div>
+        <div class="form-row" style="margin-bottom:10px"><div class="form-g"><div class="fl">Logo Width (px)</div><input class="fi" value="160"></div><div class="form-g"><div class="fl">Font Family</div><select class="fi fs"><option>Arial, Helvetica, sans-serif</option><option>Georgia, serif</option><option>Trebuchet MS, sans-serif</option></select></div></div>
+        <div class="form-g"><div class="fl">Button Style</div><div style="display:flex;gap:7px;margin-top:7px"><button style="padding:8px 16px;background:#1E3A5F;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:12px;outline:2px solid var(--cyan);">Rounded ✓</button><button style="padding:8px 16px;background:var(--bg3);color:var(--t2);border:1px solid var(--b2);cursor:pointer;font-size:12px;">Square</button><button style="padding:8px 16px;background:var(--bg3);color:var(--t2);border:1px solid var(--b2);cursor:pointer;font-size:12px;border-radius:50px;">Pill</button></div></div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Footer & Compliance</span></div><div class="panel-body">
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">Company Name</div><input class="fi" value="Trustle Ltd"></div>
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">Registered Address (required CAN-SPAM/GDPR)</div><input class="fi" value="123 Tech Street, London EC2A 4AA, United Kingdom"></div>
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">Email Signature</div><input class="fi" value="Alex, Trustle Team"></div>
+        <div class="form-g"><div class="fl">Inbox Preview Text Prefix</div><input class="fi" value="A quick note from Trustle —"></div>
+      </div></div>
+    </div>
+    <!-- Live preview -->
+    <div class="panel"><div class="panel-hdr"><span class="panel-label">// Live Email Preview</span><button class="btn btn-a btn-xs">📤 SEND TEST EMAIL</button></div>
+      <div style="padding:14px;background:var(--bg3);overflow-y:auto;max-height:600px">
+        <div style="max-width:480px;margin:0 auto">
+          <div style="background:#1E3A5F;padding:20px 26px;text-align:center;border-radius:4px 4px 0 0"><div style="font-family:Georgia,serif;font-size:20px;font-weight:700;color:#fff">Trustle</div><div style="font-size:10px;color:rgba(255,255,255,.55);margin-top:2px">Access Management for Modern IT Teams</div></div>
+          <div style="background:#fff;padding:22px 26px;font-family:Arial,sans-serif;font-size:13px;color:#1e293b;line-height:1.7"><p style="font-weight:600;margin-bottom:11px">Hi {{first_name}},</p><p style="margin-bottom:11px">This is how your emails will render with the current branding applied. The Email Agent will use these exact colours and styles for every campaign.</p><div style="text-align:center;margin:18px 0"><a style="display:inline-block;padding:11px 22px;background:#1E3A5F;color:#fff;text-decoration:none;font-weight:700;font-size:13px;border-radius:6px">Call to Action →</a></div><p style="font-size:12px;color:#64748b;margin-top:14px">Best,<br><strong>Alex, Trustle Team</strong></p></div>
+          <div style="background:#f8fafc;padding:12px 26px;text-align:center;font-family:Arial,sans-serif;font-size:10px;color:#94a3b8;border-radius:0 0 4px 4px;border-top:1px solid #e2e8f0"><p>Trustle Ltd · 123 Tech Street, London EC2A 4AA</p><p style="margin-top:4px"><a href="#" style="color:#94a3b8">Privacy Policy</a> · <a href="#" style="color:#94a3b8">Unsubscribe</a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────────────── USERS -->
+<div id="pg-users" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// USERS</div><div class="ph-title">Team Access</div></div><div class="ph-right"><button class="btn btn-c btn-sm" onclick="openModal('modal-invite')">+ INVITE USER</button></div></div>
+  <div class="panel"><div class="panel-hdr"><span class="panel-label">// OpSync users</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">3 of 5 seats used · Growth plan</span></div><div style="padding:10px 14px">
+    <div class="user-row"><div class="user-av" style="background:linear-gradient(135deg,#1E3A5F,var(--cyan3));color:#fff">CL</div><div class="user-info"><div class="user-name">Clive Lawson</div><div class="user-email">clive@trustle.io</div></div><span class="role-badge rb-sa">SUPER ADMIN</span><div style="margin-left:auto;display:flex;gap:8px;align-items:center"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last login: today</span></div></div>
+    <div class="user-row"><div class="user-av" style="background:linear-gradient(135deg,#145A32,var(--green2));color:#fff">SM</div><div class="user-info"><div class="user-name">Sarah Mitchell</div><div class="user-email">sarah@trustle.io</div></div><span class="role-badge rb-admin">ADMIN</span><div style="margin-left:auto;display:flex;gap:7px;align-items:center"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last login: yesterday</span><button class="btn btn-ghost btn-xs">CHANGE ROLE</button><button class="btn btn-r btn-xs">REVOKE</button></div></div>
+    <div class="user-row"><div class="user-av" style="background:linear-gradient(135deg,#6E2FA8,var(--purple2));color:#fff">TH</div><div class="user-info"><div class="user-name">Tom Hargreaves</div><div class="user-email">tom@agency.co.uk</div></div><span class="role-badge rb-viewer">VIEWER</span><div style="margin-left:auto;display:flex;gap:7px;align-items:center"><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">Last login: 3d ago</span><button class="btn btn-ghost btn-xs">CHANGE ROLE</button><button class="btn btn-r btn-xs">REVOKE</button></div></div>
+  </div></div>
+  <div class="panel"><div class="panel-hdr"><span class="panel-label">// Pending Invitations</span></div><div style="padding:10px 14px">
+    <div class="user-row" style="opacity:.6"><div class="user-av" style="background:var(--b2)">?</div><div class="user-info"><div class="user-name">Awaiting acceptance</div><div class="user-email">james@processpilots.online</div></div><span class="role-badge rb-viewer">VIEWER</span><div style="margin-left:auto;display:flex;gap:7px;align-items:center"><span style="font-family:var(--fm);font-size:9px;color:var(--amber)">Invited 2d ago</span><button class="btn btn-a btn-xs">RESEND</button><button class="btn btn-r btn-xs">CANCEL</button></div></div>
+  </div></div>
+  <div class="info-box">Viewer role: read-only access — can view all data, leads, campaigns, standups, and logs. Cannot approve, trigger agents, or modify settings. Admin role: full access including approvals and configuration.</div>
+</div>
+
+<!-- ─────────────────────────────────────── SETTINGS -->
+<div id="pg-settings" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// SETTINGS</div><div class="ph-title">Platform Configuration</div></div><div class="ph-right"><button class="btn btn-c btn-sm">SAVE ALL CHANGES</button></div></div>
+  <div class="g2">
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Outbound email (SMTP)</span><span class="chip ch-g" style="font-size:7.5px">CONNECTED</span></div><div class="panel-body">
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">Sending Email Address</div><input class="fi" value="outreach@trustle.io"></div>
+        <div class="form-row" style="margin-bottom:9px"><div class="form-g"><div class="fl">SMTP Host</div><input class="fi" value="smtp.yourprovider.com"></div><div class="form-g" style="max-width:80px"><div class="fl">Port</div><input class="fi" value="465"></div></div>
+        <div class="form-g" style="margin-bottom:10px"><div class="fl">App Password</div><input class="fi" type="password" value="••••••••••••••••"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><span style="font-family:var(--fm);font-size:9px;color:var(--green)">✓ SPF verified</span><span style="font-family:var(--fm);font-size:9px;color:var(--green)">✓ DKIM verified</span><span style="font-family:var(--fm);font-size:9px;color:var(--green)">✓ DMARC active</span></div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Internal CRM (Opsync)</span><span class="chip ch-g" style="font-size:7.5px">ACTIVE</span></div><div class="panel-body">
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">Data store</div><input class="fi" value="Supabase — leads, contacts, enrolments (your tenant)" readonly style="color:var(--t3)"></div>
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">Organisation</div><input class="fi" value="Trustle &amp; Process Pilots"></div>
+        <div class="form-g"><div class="fl">Optional inbound webhook (external systems → Opsync)</div><input class="fi" value="https://your-domain.com/api/webhooks/external-sync" style="font-size:10px;color:var(--t3)" readonly></div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Google Search Console</span><span class="chip ch-a" style="font-size:7.5px">OPTIONAL</span></div><div class="panel-body">
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">GSC Property — Trustle</div><input class="fi" placeholder="https://trustle.io/"></div>
+        <div class="form-g"><div class="fl">GSC Property — Process Pilots</div><input class="fi" placeholder="https://processpilots.online/"></div>
+      </div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// AI Engine (OpenAI)</span></div><div class="panel-body">
+        <div class="form-g" style="margin-bottom:9px"><div class="fl">OpenAI API Key</div><input class="fi" type="password" value="sk-proj-••••••••••••••••••••••••••••••••••••••••••"></div>
+        <div class="form-row" style="margin-bottom:9px"><div class="form-g"><div class="fl">Default Model</div><select class="fi fs"><option>gpt-4o-mini (recommended)</option><option>gpt-4o</option></select></div><div class="form-g"><div class="fl">Batch API</div><div class="tog-row" style="margin-top:10px"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Enable (50% off eligible tasks)</span></div></div></div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// AI Spend Limits</span></div><div class="panel-body">
+        <div class="form-row" style="margin-bottom:8px"><div class="form-g"><div class="fl">Daily Limit (USD)</div><input class="fi" value="5.00"></div><div class="form-g"><div class="fl">Monthly Limit (USD)</div><input class="fi" value="50.00"></div></div>
+        <div class="info-box" style="font-size:10px;margin-bottom:8px">If daily limit is hit, all agent runs pause and you're notified by email. Resets 00:00 UTC daily.</div>
+        <div style="font-family:var(--fm);font-size:10px;color:var(--t3)">Today: <span style="color:var(--green)">$0.051</span> / $5.00 · Month: <span style="color:var(--cyan)">$4.82</span> / $50.00</div>
+      </div></div>
+      <div class="panel"><div class="panel-hdr"><span class="panel-label">// Email Defaults</span></div><div class="panel-body">
+        <div class="form-row" style="margin-bottom:9px"><div class="form-g"><div class="fl">Default Follow-Ups</div><input class="fi" value="3" style="width:70px"></div><div class="form-g"><div class="fl">Require Approval</div><div class="tog-row" style="margin-top:10px"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Yes (recommended)</span></div></div></div>
+        <div class="form-row"><div class="form-g"><div class="fl">Stop on Reply</div><div class="tog-row" style="margin-top:10px"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Enabled</span></div></div><div class="form-g"><div class="fl">Stop on Bounce</div><div class="tog-row" style="margin-top:10px"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Enabled</span></div></div></div>
+      </div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ──────────────────────────────────────── BILLING -->
+<div id="pg-billing" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// BILLING</div><div class="ph-title">Subscription & Usage</div></div><div class="ph-right"><button class="btn btn-c btn-sm">MANAGE BILLING ↗</button></div></div>
+  <div class="g3">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Current Plan</div><div class="kpi-value kv-a" style="font-size:20px">GROWTH</div><div class="kpi-delta dn">Trial · 9 days left</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">AI Spend (Month)</div><div class="kpi-value kv-g">$4.82</div><div class="kpi-delta dn">of $50.00 limit</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">Next Renewal</div><div class="kpi-value kv-c" style="font-size:18px">26 APR</div><div class="kpi-delta dn">£149 / month</div></div>
+  </div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div class="price-card"><div class="price-tier">STARTER</div><div class="price-num">£49<sub>/mo</sub></div><div class="price-div"></div><div class="price-feat">1 product</div><div class="price-feat">Lead + Email agents only</div><div class="price-feat">2 users</div><div class="price-feat">14 day free trial</div><button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:14px">DOWNGRADE</button></div>
+    <div class="price-card current" style="position:relative"><div style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--cyan);color:var(--bg);font-family:var(--fm);font-size:8.5px;font-weight:700;padding:2px 10px;border-radius:9px;white-space:nowrap;letter-spacing:.06em">CURRENT PLAN</div><div class="price-tier">GROWTH</div><div class="price-num">£149<sub>/mo</sub></div><div class="price-div"></div><div class="price-feat">Up to 3 products</div><div class="price-feat">All 7 built-in agents</div><div class="price-feat">5 users</div><div class="price-feat">14 day free trial</div><button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:14px;opacity:.4">CURRENT PLAN</button></div>
+    <div class="price-card"><div class="price-tier">AGENCY</div><div class="price-num">£399<sub>/mo</sub></div><div class="price-div"></div><div class="price-feat">Unlimited products</div><div class="price-feat">All agents + priority runs</div><div class="price-feat">Unlimited users</div><div class="price-feat">White-label sending domain</div><button class="btn btn-c" style="width:100%;justify-content:center;margin-top:14px">UPGRADE →</button></div>
+  </div>
+</div>
+
+<!-- ─────────────────────────────────── SUPER ADMIN -->
+<div id="pg-superadmin" class="page">
+  <div class="ph"><div class="ph-left"><div class="ph-eye">// SUPER ADMIN</div><div class="ph-title">Platform Management</div></div><div class="ph-right"><span class="badge-trial" style="background:rgba(255,186,8,.12);border-color:rgba(255,186,8,.45)">👑 PLATFORM OWNER VIEW</span></div></div>
+  <div class="g5">
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--green)"></div><div class="kpi-label">Active Tenants</div><div class="kpi-value kv-g">00,04</div><div class="kpi-delta du">▲ +1 this week</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--cyan)"></div><div class="kpi-label">MRR</div><div class="kpi-value kv-c">£546</div><div class="kpi-delta du">▲ +£149</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--amber)"></div><div class="kpi-label">Trialing</div><div class="kpi-value kv-a">02</div><div class="kpi-delta dn">convert this week</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--purple)"></div><div class="kpi-label">Platform AI Spend</div><div class="kpi-value kv-p">$22.40</div><div class="kpi-delta dn">this month</div></div>
+    <div class="kpi"><div class="kpi-stripe" style="background:var(--red)"></div><div class="kpi-label">Agent Errors</div><div class="kpi-value kv-r">00,03</div><div class="kpi-delta dd">▼ across orgs</div></div>
+  </div>
+  <div class="panel"><div class="panel-hdr"><span class="panel-label">// All Tenant Organisations</span><input class="fi" placeholder="Search organisations…" style="height:26px;padding:3px 8px;font-size:11px;width:200px"></div><div style="padding:10px 14px">
+    <div class="org-row"><div class="org-logo" style="background:#1E3A5F;color:#fff">CL</div><div style="flex:1"><div class="org-name">Trustle &amp; Process Pilots <span style="font-size:10px;color:var(--t3)">(Your Org)</span></div><div class="org-sub">clive@trustle.io · Growth · Trial→9d · 2 products · 7 agents active</div></div><span class="role-badge rb-sa">OWNER</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center"><span class="mrr">£149/mo</span></div></div>
+    <div class="org-row"><div class="org-logo" style="background:#145A32;color:#fff">MK</div><div style="flex:1"><div class="org-name">McKinsey Digital Lab</div><div class="org-sub">admin@mckinsey-lab.io · Agency · Active · 4 products · All agents running</div></div><span class="chip ch-g" style="font-size:7px">ACTIVE</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center"><span class="mrr">£399/mo</span><button class="btn btn-ghost btn-xs">IMPERSONATE</button></div></div>
+    <div class="org-row"><div class="org-logo" style="background:#6E2FA8;color:#fff">ND</div><div style="flex:1"><div class="org-name">NovaDev Agency</div><div class="org-sub">hello@novadev.co · Growth · Trialing (Day 7/14) · 2 products</div></div><span class="chip ch-a" style="font-size:7px">TRIAL</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center"><span class="mrr" style="color:var(--amber);border-color:rgba(255,186,8,.3);background:var(--amber-a10)">£0 trial</span><button class="btn btn-ghost btn-xs">IMPERSONATE</button></div></div>
+    <div class="org-row"><div class="org-logo" style="background:#7B241C;color:#fff">BX</div><div style="flex:1"><div class="org-name">BrandEx Marketing</div><div class="org-sub">ops@brandex.io · Starter · Active · 1 product · Lead + Email agents</div></div><span class="chip ch-g" style="font-size:7px">ACTIVE</span><div style="margin-left:auto;display:flex;gap:6px;align-items:center"><span class="mrr">£49/mo</span><button class="btn btn-ghost btn-xs">IMPERSONATE</button></div></div>
+  </div></div>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- ════════════════════════════════════════════ MODALS -->
+
+<!-- Lead Detail -->
+<div class="modal-overlay" id="modal-lead-detail">
+  <div class="modal"><div class="modal-hdr"><span class="modal-title">Sarah Mitchell — CISO · Accenture</span><span class="modal-close" onclick="closeModal('modal-lead-detail')">×</span></div>
+  <div class="modal-body">
+    <div class="g2" style="margin-bottom:14px">
+      <div><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:4px">LEAD SCORE</div><div style="font-family:var(--fm);font-size:32px;font-weight:700;color:var(--green)">87</div><div style="font-size:10px;color:var(--t3)">Scored 87 because: CISO title matches Trustle ICP, Accenture 200+ employees, corporate email domain. Deducted: not a direct IT tool buyer.</div></div>
+      <div><div class="form-row" style="margin-bottom:7px"><div class="form-g"><div class="fl">Email</div><input class="fi" value="s.mitchell@accenture.com" style="font-size:11px"></div></div><div class="form-row"><div class="form-g"><div class="fl">Product</div><select class="fi fs" style="font-size:11px"><option>Trustle</option></select></div><div class="form-g"><div class="fl">Status</div><select class="fi fs" style="font-size:11px"><option>Contacted</option><option>New</option><option>Replied</option></select></div></div></div>
+    </div>
+    <div class="sep"></div>
+    <div style="margin-top:12px"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:8px">CONVERSATION THREAD</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:9px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;color:var(--cyan)">INITIAL EMAIL</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">18 Mar · 09:12 UTC</span></div><div style="font-size:11px;color:var(--t2)"><b>Sub:</b> How Accenture cut SaaS spend by 34%… — Opened. No reply.</div></div>
+        <div style="background:var(--bg3);border:1px solid var(--b1);border-radius:var(--r);padding:9px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;color:var(--amber)">FOLLOW-UP 1</span><span style="font-family:var(--fm);font-size:9px;color:var(--t3)">21 Mar · 08:45 UTC</span></div><div style="font-size:11px;color:var(--t2)"><b>Sub:</b> Quick question about your SaaS stack… — Opened × 2. No reply.</div></div>
+        <div style="background:var(--cyan-a05);border:1px solid var(--cyan-a20);border-radius:var(--r);padding:9px 12px"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-family:var(--fm);font-size:9px;font-weight:700;color:var(--cyan)">FOLLOW-UP 2 — PENDING APPROVAL</span><span style="font-family:var(--fm);font-size:9px;color:var(--amber)">Due Today</span></div><div style="font-size:11px;color:var(--t2)">Value-Add tone draft ready. Awaiting Admin approval before send.</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-lead-detail')">CLOSE</button><button class="btn btn-r btn-sm">OPT OUT</button><button class="btn btn-c btn-sm" onclick="nav('emailpreview');closeModal('modal-lead-detail')">VIEW PREVIEW →</button></div>
+  </div>
+</div>
+
+<!-- Add Product -->
+<div class="modal-overlay" id="modal-add-product">
+  <div class="modal"><div class="modal-hdr"><span class="modal-title">Add New Product</span><span class="modal-close" onclick="closeModal('modal-add-product')">×</span></div>
+  <div class="modal-body">
+    <div class="form-row" style="margin-bottom:10px"><div class="form-g"><div class="fl">Product Name</div><input class="fi" placeholder="e.g. My SaaS Product"></div><div class="form-g"><div class="fl">URL Slug</div><input class="fi" placeholder="my-saas-product"></div></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Description</div><textarea class="fta" placeholder="What does this product do? Who is it for?"></textarea></div>
+    <div class="form-row" style="margin-bottom:10px"><div class="form-g"><div class="fl">Website URL</div><input class="fi" placeholder="https://yourproduct.io"></div><div class="form-g"><div class="fl">Target Market</div><select class="fi fs"><option>B2B</option><option>B2C</option><option>Both B2B + B2C</option></select></div></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Lead Criteria — Target Job Titles (comma separated)</div><input class="fi" placeholder="e.g. IT Manager, CISO, Head of IT, CTO"></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Blog Topics (comma separated)</div><input class="fi" placeholder="e.g. SaaS security, access management, IT compliance"></div>
+    <div class="form-row"><div class="form-g"><div class="fl">Writing Tone</div><select class="fi fs"><option>Professional</option><option>Friendly</option><option>Technical</option><option>Authoritative</option></select></div><div class="form-g"><div class="fl">Primary Colour (branding)</div><input class="fi" placeholder="#1E3A5F"></div></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-add-product')">CANCEL</button><button class="btn btn-c">CREATE PRODUCT →</button></div>
+  </div>
+</div>
+
+<!-- Invite User -->
+<div class="modal-overlay" id="modal-invite">
+  <div class="modal" style="width:460px"><div class="modal-hdr"><span class="modal-title">Invite Team Member</span><span class="modal-close" onclick="closeModal('modal-invite')">×</span></div>
+  <div class="modal-body">
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Email Address</div><input class="fi" placeholder="colleague@company.com"></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Full Name</div><input class="fi" placeholder="Their full name"></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Role</div><select class="fi fs"><option>Viewer — read-only access to all data</option><option>Admin — full access, can approve and configure</option></select></div>
+    <div class="info-box" style="font-size:11px">An invitation email will be sent via Resend with a magic link to set their password and access OpSync.</div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-invite')">CANCEL</button><button class="btn btn-c">SEND INVITE →</button></div>
+  </div>
+</div>
+
+<!-- Custom Agent Builder -->
+<div class="modal-overlay" id="modal-agent-builder">
+  <div class="modal" style="width:660px"><div class="modal-hdr"><span class="modal-title">Custom Agent Builder</span><span class="modal-close" onclick="closeModal('modal-agent-builder')">×</span></div>
+  <div class="modal-body">
+    <div class="form-row" style="margin-bottom:10px"><div class="form-g"><div class="fl">Agent Name</div><input class="fi" placeholder="e.g. Competitor Monitor"></div><div class="form-g"><div class="fl">Output Type</div><select class="fi fs"><option>Report (saved as Markdown)</option><option>Lead (written to leads table)</option><option>Email Draft</option><option>Blog Draft</option><option>Notification only</option></select></div></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Description (shown in standups)</div><input class="fi" placeholder="What does this agent do?"></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">System Prompt — Instructions for the Agent</div><textarea class="fta" style="min-height:110px" placeholder="You are a competitor monitor agent. Your job is to...&#10;&#10;Use {{product.name}}, {{product.description}}, {{today}} in your prompt."></textarea></div>
+    <div class="form-g" style="margin-bottom:10px"><div class="fl">Tool Permissions</div><div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:7px"><div class="tog-row"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Web Search</span></div><div class="tog-row"><div class="tog" onclick="this.classList.toggle('on')"></div><span>Outbound email (SMTP)</span></div><div class="tog-row"><div class="tog" onclick="this.classList.toggle('on')"></div><span>Internal CRM read (Opsync)</span></div><div class="tog-row"><div class="tog on" onclick="this.classList.toggle('on')"></div><span>Supabase Read</span></div><div class="tog-row"><div class="tog" onclick="this.classList.toggle('on')"></div><span>Supabase Write</span></div></div></div>
+    <div class="form-row"><div class="form-g"><div class="fl">Trigger Type</div><select class="fi fs"><option>Scheduled (cron)</option><option>Manual only</option><option>After another agent completes</option></select></div><div class="form-g"><div class="fl">Schedule</div><input class="fi" value="0 9 * * 1" placeholder="cron expression"></div><div class="form-g"><div class="fl">Model Tier</div><select class="fi fs"><option>gpt-4o-mini (cheaper)</option><option>gpt-4o (smarter)</option></select></div></div>
+  </div>
+  <div class="modal-foot"><button class="btn btn-ghost" onclick="closeModal('modal-agent-builder')">CANCEL</button><button class="btn btn-a btn-sm">🧪 TEST RUN</button><button class="btn btn-c">CREATE AGENT →</button></div>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div class="modal-overlay" id="modal-notif">
+  <div class="modal" style="width:400px;position:fixed;right:16px;top:62px;margin:0;border-radius:5px;"><div class="modal-hdr"><span class="modal-title">Notifications</span><span class="modal-close" onclick="closeModal('modal-notif')">×</span></div>
+  <div style="padding:8px">
+    <div style="padding:10px 12px;border-radius:var(--r);background:var(--red-a10);border:1px solid var(--red-a20);margin-bottom:6px"><div style="font-family:var(--fm);font-size:9px;font-weight:700;color:var(--red);margin-bottom:3px">AGENT ERROR · NOW</div><div style="font-size:12px;color:var(--t1)">Developer Agent: GitHub API token expired</div></div>
+    <div style="padding:10px 12px;border-radius:var(--r);background:var(--cyan-a05);border:1px solid var(--b1);margin-bottom:6px"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:3px">APPROVAL NEEDED · 1H AGO</div><div style="font-size:12px;color:var(--t1)">Email FU-2 batch for Trustle ready to review (14 leads)</div></div>
+    <div style="padding:10px 12px;border-radius:var(--r);background:var(--cyan-a05);border:1px solid var(--b1);margin-bottom:6px"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:3px">APPROVAL NEEDED · 2H AGO</div><div style="font-size:12px;color:var(--t1)">Blog draft "SaaS Sprawl" (Trustle) ready for review</div></div>
+    <div style="padding:10px 12px;border-radius:var(--r);background:var(--cyan-a05);border:1px solid var(--b1)"><div style="font-family:var(--fm);font-size:9px;color:var(--t3);margin-bottom:3px">CHANNEL SCOUT · YESTERDAY</div><div style="font-size:12px;color:var(--t1)">4 warm leads identified — review in Intelligence feed</div></div>
+  </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════ SCRIPTS -->
+<script>
+// Navigation
+function nav(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const pg = document.getElementById('pg-' + id);
+  if (pg) pg.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'" + id + "'"))
+      n.classList.add('active');
+  });
+  document.querySelector('.content').scrollTop = 0;
+}
+
+// Modals
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m =>
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); })
+);
+
+// Email preview viewport toggle
+let epDark = false;
+function setView(v) {
+  const c = document.getElementById('ep-container');
+  if (!c) return;
+  c.style.width = v === 'mobile' ? '375px' : '600px';
+  ['btn-desk','btn-mob'].forEach(id => {
+    const b = document.getElementById(id);
+    if (b) { b.style.color = ''; b.style.borderColor = ''; }
+  });
+  const active = document.getElementById(v === 'desktop' ? 'btn-desk' : 'btn-mob');
+  if (active) { active.style.color = 'var(--cyan)'; active.style.borderColor = 'var(--cyan)'; }
+}
+function toggleDark() {
+  epDark = !epDark;
+  const body = document.getElementById('ep-email-body');
+  if (body) {
+    body.style.filter = epDark ? 'invert(1) hue-rotate(180deg)' : '';
+  }
+  const btn = document.getElementById('btn-dark');
+  if (btn) { btn.style.color = epDark ? 'var(--cyan)' : ''; btn.style.borderColor = epDark ? 'var(--cyan)' : ''; }
+}
+
+// Expandable log rows
+function expandLog(row) {
+  const nxt = row.nextElementSibling;
+  if (nxt && nxt.classList.contains('log-exp')) { nxt.remove(); return; }
+  const isErr = row.style.background.includes('255,61,90');
+  const td = row.cells;
+  const d = document.createElement('tr');
+  d.className = 'log-exp';
+  d.innerHTML = `<td colspan="10" style="background:var(--bg);padding:10px 14px;border-bottom:1px solid var(--b1)">
+    <div style="font-family:var(--fm);font-size:8px;letter-spacing:.1em;color:var(--t4);margin-bottom:6px">// RUN DETAIL</div>
+    ${isErr ? `<div style="padding:8px 10px;background:var(--red-a10);border:1px solid var(--red-a20);border-radius:var(--r);font-family:var(--fm);font-size:10px;color:var(--red);margin-bottom:8px">ERROR: GitHub API authentication token expired — renew GITHUB_TOKEN in Vercel Environment Variables</div>` : `<div style="font-size:11px;color:var(--t2);margin-bottom:8px">${td[8] ? td[8].textContent : 'Completed successfully.'}</div>`}
+    <div style="display:flex;gap:6px"><button class="btn btn-c btn-xs">▶ RE-RUN</button><button class="btn btn-ghost btn-xs">VIEW FULL JSON</button><button class="btn btn-ghost btn-xs">COPY RUN ID</button></div>
+  </td>`;
+  row.parentNode.insertBefore(d, row.nextSibling);
+}
+
+// Live clock
+function updateClock() {
+  const now = new Date();
+  const t = now.toUTCString().slice(17, 25);
+  const el = document.getElementById('live-clock');
+  if (el) el.textContent = t + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+</body>
+</html>
