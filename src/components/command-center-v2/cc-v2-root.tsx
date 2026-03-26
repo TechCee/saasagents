@@ -2,6 +2,16 @@
 
 import { CcV2AppShell } from "./cc-v2-app-shell";
 import { CcV2ModalProvider } from "./cc-v2-modals";
+import type { DashboardAgentRow } from "@/lib/dashboard/build-summary";
+
+export type CcV2NavCounts = Partial<{
+  leads: number;
+  campaigns: number;
+  followups: number;
+  blog: number;
+  intelligence: number;
+  agentLogs: number;
+}>;
 
 function initialsFromEmail(email: string) {
   const local = email.split("@")[0] ?? "U";
@@ -16,12 +26,18 @@ export function CcV2Root({
   userEmail,
   planLabel,
   trialDaysLeft,
+  navCounts,
+  agentStatuses,
+  orgName,
 }: {
   children: React.ReactNode;
   previewBanner?: React.ReactNode;
   userEmail: string;
   planLabel: string;
   trialDaysLeft: number | null;
+  navCounts?: CcV2NavCounts;
+  agentStatuses?: DashboardAgentRow[] | null;
+  orgName?: string | null;
 }) {
   return (
     <CcV2ModalProvider>
@@ -30,6 +46,9 @@ export function CcV2Root({
         userInitials={initialsFromEmail(userEmail)}
         planLabel={planLabel}
         trialDaysLeft={trialDaysLeft}
+        navCounts={navCounts}
+        agentStatuses={agentStatuses}
+        orgName={orgName}
       >
         {children}
       </CcV2AppShell>

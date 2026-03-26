@@ -5,7 +5,7 @@ export type DashboardAgentRow = {
   display_name: string;
   icon: string;
   icon_color_var: string;
-  status: "running" | "success" | "error" | "scheduled";
+  status: "running" | "success" | "error" | "scheduled" | "idle";
   subtitle: string;
   chip_class: "ch-c" | "ch-g" | "ch-r" | "ch-a";
   chip_label: string;
@@ -241,16 +241,17 @@ export async function buildDashboardSummary(
     };
     const last = logByType.get(type);
     const sched = scheduleByType.get(type);
+    const hasSchedule = Boolean(sched?.cron_expr?.trim()) && Boolean(sched?.next_run_at);
     const age = last
       ? Date.now() - new Date(last.created_at).getTime()
       : Number.POSITIVE_INFINITY;
 
-    let status: DashboardAgentRow["status"] = "scheduled";
-    let chip_class: DashboardAgentRow["chip_class"] = "ch-a";
-    let chip_label = "SCHEDULED";
+    let status: DashboardAgentRow["status"] = hasSchedule ? "scheduled" : "idle";
+    let chip_class: DashboardAgentRow["chip_class"] = hasSchedule ? "ch-a" : "ch-g";
+    let chip_label = hasSchedule ? "SCHEDULED" : "IDLE";
     let dot_class: "" | "run" = "";
-    let subtitle = sched?.cron_expr
-      ? fmtNextRun(sched.next_run_at)
+    let subtitle = hasSchedule
+      ? fmtNextRun(sched?.next_run_at)
       : "Not scheduled";
 
     if (last) {

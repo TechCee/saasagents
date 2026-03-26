@@ -1,7 +1,8 @@
 "use client";
 
 import { CcV2AgentBuilder } from "@/components/command-center-v2/cc-v2-agent-builder";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import type { DashboardSummaryJson } from "@/lib/dashboard/build-summary";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
 export type CcV2ModalId =
@@ -36,6 +37,37 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
   const closeModal = useCallback(() => setOpen(null), []);
   const api = useMemo(() => ({ openModal, closeModal }), [openModal, closeModal]);
 
+  const [notifLoading, setNotifLoading] = useState(false);
+  const [notifErr, setNotifErr] = useState<string | null>(null);
+  const [notifSummary, setNotifSummary] = useState<DashboardSummaryJson | null>(null);
+
+  useEffect(() => {
+    if (open !== "notif") return;
+    let cancelled = false;
+    setNotifLoading(true);
+    setNotifErr(null);
+    void (async () => {
+      try {
+        const res = await fetch("/api/dashboard/summary", { credentials: "same-origin" });
+        const j = (await res.json()) as Partial<DashboardSummaryJson> & { error?: string };
+        if (!res.ok) {
+          throw new Error(j.error ?? `Request failed (${res.status})`);
+        }
+        if (!cancelled) setNotifSummary(j as DashboardSummaryJson);
+      } catch (e) {
+        if (!cancelled) {
+          setNotifErr(e instanceof Error ? e.message : "Network error");
+          setNotifSummary(null);
+        }
+      } finally {
+        if (!cancelled) setNotifLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
   return (
     <ModalCtx.Provider value={api}>
       {children}
@@ -47,96 +79,25 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
         >
           <div className="modal">
             <div className="modal-hdr">
-              <span className="modal-title">Sarah Mitchell — CISO · Accenture</span>
+              <span className="modal-title">Lead details</span>
               <button type="button" className="modal-close" onClick={closeModal}>
                 ×
               </button>
             </div>
             <div className="modal-body">
-              <div className="g2" style={{ marginBottom: 14 }}>
-                <div>
-                  <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)", marginBottom: 4 }}>
-                    LEAD SCORE
-                  </div>
-                  <div style={{ fontFamily: "var(--fm)", fontSize: 32, fontWeight: 700, color: "var(--green)" }}>
-                    87
-                  </div>
-                  <div style={{ fontSize: 10, color: "var(--t3)" }}>
-                    Scored 87 because: CISO title matches Trustle ICP, Accenture 200+ employees, corporate email
-                    domain. Deducted: not a direct IT tool buyer.
-                  </div>
+              <div
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: "var(--r)",
+                  background: "var(--cyan-a05)",
+                  border: "1px solid var(--b1)",
+                }}
+              >
+                <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)", marginBottom: 6 }}>
+                  LIVE MODE
                 </div>
-                <div>
-                  <div className="form-row" style={{ marginBottom: 7 }}>
-                    <div className="form-g">
-                      <div className="fl">Email</div>
-                      <input className="fi" defaultValue="s.mitchell@accenture.com" style={{ fontSize: 11 }} />
-                    </div>
-                  </div>
-                  <div className="form-row">
-                    <div className="form-g">
-                      <div className="fl">Product</div>
-                      <select className="fi fs" style={{ fontSize: 11 }}>
-                        <option>Trustle</option>
-                      </select>
-                    </div>
-                    <div className="form-g">
-                      <div className="fl">Status</div>
-                      <select className="fi fs" style={{ fontSize: 11 }}>
-                        <option>Contacted</option>
-                        <option>New</option>
-                        <option>Replied</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="sep" />
-              <div style={{ marginTop: 12 }}>
-                <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)", marginBottom: 8 }}>
-                  CONVERSATION THREAD
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  <div style={{ background: "var(--bg3)", border: "1px solid var(--b1)", borderRadius: "var(--r)", padding: "9px 12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontFamily: "var(--fm)", fontSize: 9, fontWeight: 700, color: "var(--cyan)" }}>
-                        INITIAL EMAIL
-                      </span>
-                      <span style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)" }}>18 Mar · 09:12 UTC</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--t2)" }}>
-                      <b>Sub:</b> How Accenture cut SaaS spend by 34%… — Opened. No reply.
-                    </div>
-                  </div>
-                  <div style={{ background: "var(--bg3)", border: "1px solid var(--b1)", borderRadius: "var(--r)", padding: "9px 12px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontFamily: "var(--fm)", fontSize: 9, fontWeight: 700, color: "var(--amber)" }}>
-                        FOLLOW-UP 1
-                      </span>
-                      <span style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)" }}>21 Mar · 08:45 UTC</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--t2)" }}>
-                      <b>Sub:</b> Quick question about your SaaS stack… — Opened × 2. No reply.
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      background: "var(--cyan-a05)",
-                      border: "1px solid var(--cyan-a20)",
-                      borderRadius: "var(--r)",
-                      padding: "9px 12px",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                      <span style={{ fontFamily: "var(--fm)", fontSize: 9, fontWeight: 700, color: "var(--cyan)" }}>
-                        FOLLOW-UP 2 — PENDING APPROVAL
-                      </span>
-                      <span style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--amber)" }}>Due Today</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--t2)" }}>
-                      Value-Add tone draft ready. Awaiting Admin approval before send.
-                    </div>
-                  </div>
+                <div style={{ fontSize: 12, color: "var(--t2)", lineHeight: 1.5 }}>
+                  Lead detail view isn’t wired yet. Select a lead row once the detail endpoint is implemented.
                 </div>
               </div>
             </div>
@@ -144,12 +105,6 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
               <button type="button" className="btn btn-ghost" onClick={closeModal}>
                 CLOSE
               </button>
-              <button type="button" className="btn btn-r btn-sm">
-                OPT OUT
-              </button>
-              <Link href="/email-preview" className="btn btn-c btn-sm" onClick={closeModal}>
-                VIEW PREVIEW →
-              </Link>
             </div>
           </div>
         </div>
@@ -312,48 +267,112 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <div style={{ padding: 8 }}>
-              <div
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--r)",
-                  background: "var(--red-a10)",
-                  border: "1px solid var(--red-a20)",
-                  marginBottom: 6,
-                }}
-              >
-                <div style={{ fontFamily: "var(--fm)", fontSize: 9, fontWeight: 700, color: "var(--red)", marginBottom: 3 }}>
-                  AGENT ERROR · NOW
+              {notifLoading ? (
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "var(--r)",
+                    background: "var(--cyan-a05)",
+                    border: "1px solid var(--b1)",
+                  }}
+                >
+                  <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)" }}>LOADING…</div>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--t1)" }}>Developer Agent: GitHub API token expired</div>
-              </div>
-              <div
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--r)",
-                  background: "var(--cyan-a05)",
-                  border: "1px solid var(--b1)",
-                  marginBottom: 6,
-                }}
-              >
-                <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)", marginBottom: 3 }}>APPROVAL NEEDED · 1H AGO</div>
-                <div style={{ fontSize: 12, color: "var(--t1)" }}>Email FU-2 batch for Trustle ready to review (14 leads)</div>
-              </div>
-              <div
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: "var(--r)",
-                  background: "var(--cyan-a05)",
-                  border: "1px solid var(--b1)",
-                  marginBottom: 6,
-                }}
-              >
-                <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)", marginBottom: 3 }}>APPROVAL NEEDED · 2H AGO</div>
-                <div style={{ fontSize: 12, color: "var(--t1)" }}>Blog draft &quot;SaaS Sprawl&quot; (Trustle) ready for review</div>
-              </div>
-              <div style={{ padding: "10px 12px", borderRadius: "var(--r)", background: "var(--cyan-a05)", border: "1px solid var(--b1)" }}>
-                <div style={{ fontFamily: "var(--fm)", fontSize: 9, color: "var(--t3)", marginBottom: 3 }}>CHANNEL SCOUT · YESTERDAY</div>
-                <div style={{ fontSize: 12, color: "var(--t1)" }}>4 warm leads identified — review in Intelligence feed</div>
-              </div>
+              ) : notifErr ? (
+                <div
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: "var(--r)",
+                    background: "var(--red-a10)",
+                    border: "1px solid var(--red-a20)",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "var(--fm)",
+                      fontSize: 9,
+                      fontWeight: 700,
+                      color: "var(--red)",
+                      marginBottom: 3,
+                    }}
+                  >
+                    NOTIFICATIONS UNAVAILABLE
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--t1)" }}>{notifErr}</div>
+                </div>
+              ) : (
+                (() => {
+                  const s = notifSummary;
+                  const items: { hdr: string; body: string; kind: "error" | "info" }[] = [];
+
+                  const firstErr = (s?.feed ?? []).find((f) => Boolean(f.error));
+                  if (firstErr) {
+                    items.push({
+                      kind: "error",
+                      hdr: `AGENT ERROR · ${firstErr.time || "RECENT"}`,
+                      body: firstErr.text,
+                    });
+                  }
+
+                  for (const a of (s?.approvals ?? []).slice(0, 3)) {
+                    items.push({
+                      kind: "info",
+                      hdr: `APPROVAL NEEDED · ${a.age}`,
+                      body: a.title,
+                    });
+                  }
+
+                  const intelHint =
+                    typeof (s?.kpis?.leads_week as unknown) === "number" && (s?.kpis?.leads_week ?? 0) > 0
+                      ? `${s?.kpis?.leads_week ?? 0} new leads this week — review in Leads`
+                      : null;
+                  if (intelHint) {
+                    items.push({ kind: "info", hdr: "ACTIVITY · THIS WEEK", body: intelHint });
+                  }
+
+                  if (items.length === 0) {
+                    items.push({
+                      kind: "info",
+                      hdr: "ALL CLEAR",
+                      body: "No notifications right now.",
+                    });
+                  }
+
+                  return (
+                    <>
+                      {items.map((it, idx) => (
+                        <div
+                          // eslint-disable-next-line react/no-array-index-key
+                          key={`${it.hdr}-${idx}`}
+                          style={{
+                            padding: "10px 12px",
+                            borderRadius: "var(--r)",
+                            background: it.kind === "error" ? "var(--red-a10)" : "var(--cyan-a05)",
+                            border:
+                              it.kind === "error"
+                                ? "1px solid var(--red-a20)"
+                                : "1px solid var(--b1)",
+                            marginBottom: idx === items.length - 1 ? 0 : 6,
+                          }}
+                        >
+                          <div
+                            style={{
+                              fontFamily: "var(--fm)",
+                              fontSize: 9,
+                              fontWeight: it.kind === "error" ? 700 : 500,
+                              color: it.kind === "error" ? "var(--red)" : "var(--t3)",
+                              marginBottom: 3,
+                            }}
+                          >
+                            {it.hdr}
+                          </div>
+                          <div style={{ fontSize: 12, color: "var(--t1)" }}>{it.body}</div>
+                        </div>
+                      ))}
+                    </>
+                  );
+                })()
+              )}
             </div>
           </div>
         </div>
