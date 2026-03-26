@@ -13,16 +13,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION public.current_org_id()
-RETURNS uuid
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT organization_id FROM public.user_profiles WHERE id = auth.uid() LIMIT 1
-$$;
-
 -- ——— Core tenant ———
 CREATE TABLE IF NOT EXISTS public.organisations (
   id          uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -61,6 +51,16 @@ CREATE TABLE IF NOT EXISTS public.user_profiles (
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_profiles_org ON public.user_profiles(organisation_id);
+
+CREATE OR REPLACE FUNCTION public.current_org_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT organisation_id FROM public.user_profiles WHERE id = auth.uid() LIMIT 1
+$$;
 
 ALTER TABLE public.organisations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscriptions ENABLE ROW LEVEL SECURITY;

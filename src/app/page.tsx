@@ -1,6 +1,21 @@
-import Link from "next/link";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import { SignInForm } from "@/components/sign-in-form";
 import { isUiPreviewMode } from "@/lib/ui-preview";
+import styles from "./login.module.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
+  variable: "--font-login-sans",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500"],
+  variable: "--font-login-mono",
+  display: "swap",
+});
 
 type Props = { searchParams: Promise<{ needs?: string }> };
 
@@ -9,52 +24,86 @@ export default async function Home({ searchParams }: Props) {
   const needs = (await searchParams).needs;
 
   return (
-    <main className="relative min-h-dvh min-h-screen cc-grid-bg px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(3rem,env(safe-area-inset-top))] sm:px-6 sm:py-16">
-      <div
-        className="pointer-events-none absolute inset-0 opacity-40"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(34, 211, 238, 0.12), transparent), radial-gradient(ellipse 60% 40% at 100% 0%, rgba(232, 121, 249, 0.08), transparent)",
-        }}
-      />
-      {needs === "backend" ? (
-        <div className="relative mx-auto mb-6 max-w-lg rounded-xl border border-[var(--cc-amber)]/40 bg-[var(--cc-amber)]/10 px-4 py-3 text-center text-sm leading-relaxed text-[var(--cc-amber)] sm:mb-8">
-          Add Supabase URL and anon key to <code className="font-mono text-xs">.env.local</code>, or enable
-          UI preview below.
-        </div>
-      ) : null}
-      <div className="relative mx-auto max-w-lg px-1 text-center text-balance">
-        <div className="cc-font-display inline-flex items-center gap-2 rounded-full border border-[var(--cc-border)] bg-[var(--cc-panel)]/80 px-4 py-1.5 text-sm font-semibold tracking-tight text-[var(--cc-cyan)]">
-          OpSync
-        </div>
-        <h1 className="cc-font-display mt-5 bg-gradient-to-b from-white to-slate-400 bg-clip-text text-2xl font-bold tracking-tight text-transparent sm:mt-6 sm:text-4xl">
-          Automated marketing operations
-        </h1>
-        <p className="mt-4 text-sm leading-relaxed text-[var(--cc-muted)] sm:text-base">
-          Internal CRM in Supabase — agents, sequences, and approvals in one cockpit. Sign in when your
-          project is wired, or open a read-only UI preview first.
-        </p>
-      </div>
-
-      {preview ? (
-        <div className="relative mx-auto mt-8 max-w-sm px-0">
-          <Link
-            href="/dashboard"
-            className="flex min-h-12 w-full items-center justify-center rounded-xl border border-[var(--cc-lime)]/45 bg-[var(--cc-lime)]/15 px-3 py-3.5 text-center text-sm font-semibold leading-snug text-[var(--cc-lime)] shadow-[0_0_32px_rgba(163,230,53,0.12)] transition active:bg-[var(--cc-lime)]/25 sm:min-h-0 sm:py-4 sm:text-base"
-          >
-            Open dashboard — UI preview (no login)
-          </Link>
-          <p className="mt-3 text-center font-mono text-[10px] text-[var(--cc-muted)]">
-            Set in <code className="text-[var(--cc-cyan)]">.env.local</code>:{" "}
-            <code className="text-[var(--cc-cyan)]">UI_PREVIEW_MODE=true</code>
+    <div
+      className={`${inter.variable} ${jetbrainsMono.variable} ${styles.loginPage}`}
+    >
+      <div className={styles.page}>
+        <aside className={styles.leftPanel} aria-label="Product overview">
+          <p className={styles.wordmark}>
+            <span className={`app-logo ${styles.wordmarkText}`} translate="no">
+              OpSync
+            </span>
           </p>
-        </div>
-      ) : null}
 
-      <SignInForm showPreviewHint={preview} />
-      <p className="relative mx-auto mt-10 max-w-md text-center font-mono text-[10px] text-slate-600">
-        v5.1 · Trustle &amp; Process Pilots
-      </p>
-    </main>
+          <div className={styles.heroBadge}>
+            <span className={styles.heroBadgeDot} aria-hidden />
+            Marketing Ops Platform
+          </div>
+
+          <h1 className={styles.heroTitle}>
+            Automated
+            <br />
+            <em>marketing operations</em>
+            <br />
+            at scale
+          </h1>
+
+          <p className={styles.heroSub}>
+            Internal CRM powered by Supabase — orchestrate agents, run drip sequences, and manage
+            approval workflows in one unified cockpit.
+          </p>
+
+          <div className={styles.featureList}>
+            <div className={styles.featureItem}>
+              <div className={`${styles.featureIcon} ${styles.featureIconGreen}`} aria-hidden>
+                🤖
+              </div>
+              <div className={styles.featureText}>
+                <h4>AI Agents</h4>
+                <p>Delegate prospecting, enrichment, and outreach to autonomous agents.</p>
+              </div>
+            </div>
+            <div className={styles.featureItem}>
+              <div className={`${styles.featureIcon} ${styles.featureIconBlue}`} aria-hidden>
+                📧
+              </div>
+              <div className={styles.featureText}>
+                <h4>Sequences &amp; Drips</h4>
+                <p>Visual sequence builder with conditional branches and A/B testing.</p>
+              </div>
+            </div>
+            <div className={styles.featureItem}>
+              <div className={`${styles.featureIcon} ${styles.featureIconAmber}`} aria-hidden>
+                ✅
+              </div>
+              <div className={styles.featureText}>
+                <h4>Approval Flows</h4>
+                <p>Route copy, budgets, and campaigns through structured approvals.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.socialProof}>
+            <div className={styles.avatars} aria-hidden>
+              <div className={styles.avatar}>A</div>
+              <div className={styles.avatar}>M</div>
+              <div className={styles.avatar}>R</div>
+              <div className={styles.avatar}>J</div>
+            </div>
+            <span className={styles.socialText}>
+              <strong>Marketing &amp; revops</strong> — agents, sequences, and approvals in one cockpit
+            </span>
+          </div>
+        </aside>
+
+        <main className={styles.rightPanel}>
+          <SignInForm
+            showPreviewHint={preview}
+            uiPreviewEnabled={preview}
+            needsBackend={needs === "backend"}
+          />
+        </main>
+      </div>
+    </div>
   );
 }

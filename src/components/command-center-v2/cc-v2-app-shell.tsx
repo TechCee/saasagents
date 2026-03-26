@@ -118,8 +118,9 @@ export function CcV2AppShell({
           </button>
 
           <Link href="/dashboard" className="logo" onClick={() => setMobileNavOpen(false)}>
-            <div className="logo-sq">OS</div>
-            <span className="logo-name">OpSync</span>
+            <span className="logo-name app-logo" translate="no">
+              OpSync
+            </span>
           </Link>
           <div className="logo-sep" />
           <span className="org-pill">Trustle &amp; Process Pilots</span>

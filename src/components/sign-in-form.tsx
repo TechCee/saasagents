@@ -1,18 +1,31 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
+import styles from "@/app/login.module.css";
 import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 
-export function SignInForm({ showPreviewHint = false }: { showPreviewHint?: boolean }) {
+export function SignInForm({
+  showPreviewHint = false,
+  uiPreviewEnabled = false,
+  needsBackend = false,
+}: {
+  showPreviewHint?: boolean;
+  uiPreviewEnabled?: boolean;
+  needsBackend?: boolean;
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setMsg(null);
+    setSubmitting(true);
     const supabase = createBrowserSupabaseClient();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setSubmitting(false);
     if (error) {
       setMsg(error.message);
       return;
@@ -21,60 +34,117 @@ export function SignInForm({ showPreviewHint = false }: { showPreviewHint?: bool
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="relative mx-auto mt-8 max-w-sm space-y-4 rounded-2xl border border-[var(--cc-border-strong)] bg-[var(--cc-panel)]/90 px-5 py-6 shadow-[0_0_80px_rgba(34,211,238,0.06)] backdrop-blur-md cc-glow-cyan sm:mt-10 sm:space-y-5 sm:px-8 sm:py-8"
-    >
-      <div>
-        <h2 className="cc-font-display text-lg font-semibold text-white">Secure access</h2>
-        <p className="mt-1 text-xs text-[var(--cc-muted)]">
-          Supabase Auth (email provider). Your data stays in your internal CRM.
+    <>
+      {needsBackend ? (
+        <div className={styles.needsBanner}>
+          Add Supabase URL and anon key to <code>.env.local</code>, or enable UI preview mode.
+        </div>
+      ) : null}
+
+      <div className={styles.statusBar}>
+        <span className={styles.statusDot} aria-hidden />
+        <span className={styles.statusText}>All systems operational</span>
+      </div>
+
+      <div className={styles.formHeader}>
+        <p className={styles.formEyebrow}>Secure Access</p>
+        <h2 className={styles.formTitle}>Sign in to Command Center</h2>
+        <p className={styles.formDesc}>
+          Sign in with your organisation account to open the Command Center — leads, campaigns, agent runs,
+          and approvals in one place.
         </p>
         {showPreviewHint ? (
-          <p className="mt-2 text-[11px] text-[var(--cc-amber)]">
-            UI preview is on — use the green button above to skip login. Use this form once Supabase is
+          <p className={styles.previewHint}>
+            UI preview is on — use the button below to skip login. Use this form once Supabase is
             configured.
           </p>
         ) : null}
       </div>
-      <label className="block text-sm">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[var(--cc-cyan)]">
-          Email
-        </span>
-        <input
-          type="email"
-          required
-          autoComplete="email"
-          className="mt-1.5 min-h-11 w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-bg-deep)] px-3 py-3 text-base text-white outline-none ring-[var(--cc-cyan)]/30 placeholder:text-slate-600 focus:ring-2 sm:min-h-0 sm:py-2.5 sm:text-sm"
-          placeholder="you@company.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
-      </label>
-      <label className="block text-sm">
-        <span className="font-mono text-[10px] font-semibold uppercase tracking-wide text-[var(--cc-cyan)]">
-          Password
-        </span>
-        <input
-          type="password"
-          required
-          autoComplete="current-password"
-          className="mt-1.5 w-full rounded-lg border border-[var(--cc-border)] bg-[var(--cc-bg-deep)] px-3 py-2.5 text-sm text-white outline-none ring-[var(--cc-cyan)]/30 focus:ring-2"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </label>
-      {msg ? (
-        <p className="rounded-lg border border-[var(--cc-rose)]/40 bg-[var(--cc-rose)]/10 px-3 py-2 text-xs text-[var(--cc-rose)]">
-          {msg}
-        </p>
-      ) : null}
-      <button
-        type="submit"
-        className="min-h-12 w-full rounded-lg bg-gradient-to-r from-[var(--cc-cyan)]/90 to-[var(--cc-cyan)]/70 py-3 text-base font-semibold text-[var(--cc-bg-deep)] shadow-[0_0_24px_rgba(34,211,238,0.25)] transition hover:brightness-110 active:brightness-95 sm:min-h-0 sm:py-2.5 sm:text-sm"
-      >
-        Sign in to OpSync
-      </button>
-    </form>
+
+      <form onSubmit={onSubmit} autoComplete="on">
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel} htmlFor="login-email">
+            <span>Email address</span>
+          </label>
+          <div className={styles.inputWrapper}>
+            <span className={styles.inputIcon} aria-hidden>
+              ✉
+            </span>
+            <input
+              id="login-email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              className={styles.formInput}
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.formLabel} htmlFor="login-password">
+            <span>Password</span>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+              }}
+            >
+              Forgot password?
+            </a>
+          </label>
+          <div className={styles.inputWrapper}>
+            <span className={styles.inputIcon} aria-hidden>
+              🔒
+            </span>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              className={styles.formInput}
+              placeholder="••••••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        </div>
+
+        {msg ? (
+          <p className={styles.formError} role="alert">
+            {msg}
+          </p>
+        ) : null}
+
+        <button className={styles.btnPrimary} type="submit" disabled={submitting}>
+          {submitting ? "Signing in…" : "Sign in to OpSync →"}
+        </button>
+
+        {uiPreviewEnabled ? (
+          <>
+            <div className={styles.divider}>
+              <div className={styles.dividerLine} />
+              <span className={styles.dividerText}>or</span>
+              <div className={styles.dividerLine} />
+            </div>
+            <Link href="/dashboard" className={styles.btnGhost}>
+              <span aria-hidden>👁</span>
+              Open read-only UI preview
+            </Link>
+            <p className={styles.previewHint} style={{ marginTop: 10, textAlign: "center" }}>
+              Set in <code>.env.local</code>: <code>UI_PREVIEW_MODE=true</code>
+            </p>
+          </>
+        ) : null}
+      </form>
+
+      <div className={styles.formFooter}>
+        <span className={styles.versionBadge}>v1.0.0.1</span>
+      </div>
+    </>
   );
 }

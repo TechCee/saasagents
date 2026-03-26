@@ -1,5 +1,6 @@
 "use client";
 
+import { CcV2AgentBuilder } from "@/components/command-center-v2/cc-v2-agent-builder";
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import Link from "next/link";
 
@@ -285,95 +286,7 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
                 ×
               </button>
             </div>
-            <div className="modal-body">
-              <div className="form-row" style={{ marginBottom: 10 }}>
-                <div className="form-g">
-                  <div className="fl">Agent Name</div>
-                  <input className="fi" placeholder="e.g. Competitor Monitor" />
-                </div>
-                <div className="form-g">
-                  <div className="fl">Output Type</div>
-                  <select className="fi fs">
-                    <option>Report (saved as Markdown)</option>
-                    <option>Lead (written to leads table)</option>
-                    <option>Email Draft</option>
-                    <option>Blog Draft</option>
-                    <option>Notification only</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-g" style={{ marginBottom: 10 }}>
-                <div className="fl">Description (shown in standups)</div>
-                <input className="fi" placeholder="What does this agent do?" />
-              </div>
-              <div className="form-g" style={{ marginBottom: 10 }}>
-                <div className="fl">System Prompt — Instructions for the Agent</div>
-                <textarea
-                  className="fta"
-                  style={{ minHeight: 110 }}
-                  placeholder={
-                    "You are a competitor monitor agent. Your job is to...\n\nUse {{product.name}}, {{product.description}}, {{today}} in your prompt."
-                  }
-                />
-              </div>
-              <div className="form-g" style={{ marginBottom: 10 }}>
-                <div className="fl">Tool Permissions</div>
-                <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginTop: 7 }}>
-                  <div className="tog-row">
-                    <div className="tog on" />
-                    <span>Web Search</span>
-                  </div>
-                  <div className="tog-row">
-                    <div className="tog" />
-                    <span>Outbound email (SMTP)</span>
-                  </div>
-                  <div className="tog-row">
-                    <div className="tog" />
-                    <span>Internal CRM read (Opsync)</span>
-                  </div>
-                  <div className="tog-row">
-                    <div className="tog on" />
-                    <span>Supabase Read</span>
-                  </div>
-                  <div className="tog-row">
-                    <div className="tog" />
-                    <span>Supabase Write</span>
-                  </div>
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-g">
-                  <div className="fl">Trigger Type</div>
-                  <select className="fi fs">
-                    <option>Scheduled (cron)</option>
-                    <option>Manual only</option>
-                    <option>After another agent completes</option>
-                  </select>
-                </div>
-                <div className="form-g">
-                  <div className="fl">Schedule</div>
-                  <input className="fi" defaultValue="0 9 * * 1" placeholder="cron expression" />
-                </div>
-                <div className="form-g">
-                  <div className="fl">Model Tier</div>
-                  <select className="fi fs">
-                    <option>gpt-4o-mini (cheaper)</option>
-                    <option>gpt-4o (smarter)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div className="modal-foot">
-              <button type="button" className="btn btn-ghost" onClick={closeModal}>
-                CANCEL
-              </button>
-              <button type="button" className="btn btn-a btn-sm">
-                🧪 TEST RUN
-              </button>
-              <button type="button" className="btn btn-c">
-                CREATE AGENT →
-              </button>
-            </div>
+            <CcV2AgentBuilder onClose={closeModal} />
           </div>
         </div>
 

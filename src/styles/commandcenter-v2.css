@@ -41,8 +41,8 @@
 .topbar{height:50px;background:var(--bg2);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 18px;gap:14px;position:relative;flex-shrink:0;}
 .topbar::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent 0%,var(--cyan3) 20%,var(--cyan) 50%,var(--cyan3) 80%,transparent 100%);opacity:.6;}
 .logo{display:flex;align-items:center;gap:9px;text-decoration:none;}
-.logo-sq{width:28px;height:28px;background:linear-gradient(135deg,var(--cyan) 0%,var(--cyan3) 100%);border-radius:4px;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-weight:700;font-size:10px;color:var(--bg);letter-spacing:-.5px;box-shadow:0 0 16px rgba(0,238,255,.35);}
-.logo-name{font-family:var(--fd);font-weight:700;font-size:15px;letter-spacing:-.02em;color:var(--t1);}
+.logo-sq{display:none !important;}
+.logo .logo-name{margin:0;}
 .logo-sep{width:1px;height:18px;background:var(--b2);margin:0 4px;}
 .org-pill{font-family:var(--fm);font-size:10px;color:var(--t3);}
 .topbar-mid{flex:1;display:flex;justify-content:center;align-items:center;gap:20px;}
@@ -381,7 +381,7 @@ td.sm{font-size:10px;color:var(--t3);}
   .badge-trial--compact{display:inline-flex;}
   .sep-v--desktop{display:none;}
   .logo{flex-shrink:0;min-width:0;}
-  .logo-name{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .logo .app-logo{max-width:42vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   .cc-v2-app.cc-sidebar-open .cc-nav-backdrop{
     display:block;position:fixed;inset:0;z-index:10000;border:0;padding:0;margin:0;

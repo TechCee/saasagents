@@ -1,6 +1,10 @@
 "use client";
 
 import { useCcV2Modal } from "@/components/command-center-v2/cc-v2-modals";
+import { applyCommandCenterPageData } from "@/lib/command-center/apply-page-html";
+import { isCommandCenterPage } from "@/lib/command-center/page-types";
+import { applyDashboardLiveData } from "@/lib/dashboard/apply-live-html";
+import type { DashboardSummaryJson } from "@/lib/dashboard/build-summary";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -84,7 +88,13 @@ export type CcV2PageKey =
   | "billing"
   | "superadmin";
 
-export function CcV2HtmlEmbed({ pageId }: { pageId: CcV2PageKey }) {
+export function CcV2HtmlEmbed({
+  pageId,
+  useLiveData = false,
+}: {
+  pageId: CcV2PageKey;
+  useLiveData?: boolean;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { openModal, closeModal } = useCcV2Modal();
@@ -98,6 +108,113 @@ export function CcV2HtmlEmbed({ pageId }: { pageId: CcV2PageKey }) {
     const onClick = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
       if (!t) return;
+
+      const runAllEl = t.closest("[data-cc-run-all-agents]");
+      if (runAllEl && pageId === "dashboard") {
+        e.preventDefault();
+        const btn = runAllEl as HTMLButtonElement;
+        const prevText = btn.textContent;
+        const prevDisabled = btn.disabled;
+        btn.disabled = true;
+        btn.textContent = "RUNNING…";
+        void (async () => {
+          const mountEl = ref.current;
+          try {
+            const res = await fetch("/api/agents/execute", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ run_all: true }),
+              credentials: "same-origin",
+            });
+            let data: { error?: string; results?: { ok: boolean; agent_type: string; error?: string }[] } =
+              {};
+            try {
+              data = (await res.json()) as typeof data;
+            } catch {
+              /* ignore */
+            }
+            if (!res.ok) {
+              window.alert(data.error ?? `Request failed (${res.status})`);
+              return;
+            }
+            const lines = (data.results ?? []).map((r) =>
+              r.ok ? `✓ ${r.agent_type}` : `✗ ${r.agent_type}: ${r.error ?? "error"}`,
+            );
+            window.alert(lines.length ? lines.join("\n") : "Done.");
+            if (useLiveData && mountEl && pageId === "dashboard") {
+              const s = await fetch("/api/dashboard/summary", { credentials: "same-origin" });
+              if (s.ok) {
+                const j = (await s.json()) as DashboardSummaryJson;
+                applyDashboardLiveData(mountEl, j);
+              }
+            }
+          } catch (err) {
+            window.alert(err instanceof Error ? err.message : "Network error");
+          } finally {
+            btn.disabled = prevDisabled;
+            if (prevText) btn.textContent = prevText;
+          }
+        })();
+        return;
+      }
+
+      const runAgentEl = t.closest("[data-cc-run-agent]");
+      if (runAgentEl) {
+        e.preventDefault();
+        const agentType = runAgentEl.getAttribute("data-cc-run-agent")?.trim();
+        if (!agentType) return;
+        const btn = runAgentEl as HTMLButtonElement;
+        const prevText = btn.textContent;
+        const prevDisabled = btn.disabled;
+        btn.disabled = true;
+        btn.textContent = "RUNNING…";
+        void (async () => {
+          try {
+            const res = await fetch("/api/agents/execute", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ agent_type: agentType }),
+              credentials: "same-origin",
+            });
+            let data: {
+              error?: string;
+              results?: { ok: boolean; agent_type: string; error?: string }[];
+            } = {};
+            try {
+              data = (await res.json()) as typeof data;
+            } catch {
+              /* ignore */
+            }
+            if (!res.ok) {
+              window.alert(data.error ?? `Request failed (${res.status})`);
+              return;
+            }
+            const r0 = data.results?.[0];
+            window.alert(
+              r0
+                ? r0.ok
+                  ? `✓ ${r0.agent_type}`
+                  : `✗ ${r0.agent_type}: ${r0.error ?? "error"}`
+                : "Done.",
+            );
+          } catch (err) {
+            window.alert(err instanceof Error ? err.message : "Network error");
+          } finally {
+            btn.disabled = prevDisabled;
+            if (prevText) btn.textContent = prevText;
+          }
+        })();
+        return;
+      }
+
+      const prodEdit = t.closest("[data-cc-product-edit]");
+      if (prodEdit) {
+        e.preventDefault();
+        const id = prodEdit.getAttribute("data-cc-product-edit")?.trim();
+        if (id) router.push(`/products/${id}`);
+        return;
+      }
+
       const navEl0 = t.closest("[data-cc-nav]");
       if (navEl0?.hasAttribute("data-cc-close-modal")) {
         e.preventDefault();
@@ -203,6 +320,42 @@ export function CcV2HtmlEmbed({ pageId }: { pageId: CcV2PageKey }) {
         applyEpLayout(mount, "desktop");
       }
 
+      if (pageId === "dashboard" && useLiveData && !cancelled) {
+        try {
+          const s = await fetch("/api/dashboard/summary", { credentials: "same-origin" });
+          if (s.ok && !cancelled && ref.current === mount) {
+            const j = (await s.json()) as DashboardSummaryJson;
+            applyDashboardLiveData(mount, j);
+          }
+        } catch {
+          /* keep static fallback */
+        }
+      }
+
+      if (
+        useLiveData &&
+        !cancelled &&
+        pageId !== "dashboard" &&
+        isCommandCenterPage(pageId)
+      ) {
+        try {
+          const p = await fetch(
+            `/api/command-center/page-data?page=${encodeURIComponent(pageId)}`,
+            { credentials: "same-origin" },
+          );
+          if (p.ok && !cancelled && ref.current === mount) {
+            const body = (await p.json()) as {
+              data?: Record<string, unknown>;
+            };
+            if (body.data) {
+              applyCommandCenterPageData(mount, pageId, body.data);
+            }
+          }
+        } catch {
+          /* keep static fallback */
+        }
+      }
+
       if (cancelled) return;
       mount.addEventListener("click", onClick);
       mount.addEventListener("keydown", onKeyDown);
@@ -214,7 +367,7 @@ export function CcV2HtmlEmbed({ pageId }: { pageId: CcV2PageKey }) {
       target.removeEventListener("keydown", onKeyDown);
       target.innerHTML = "";
     };
-  }, [closeModal, openModal, pageId, router]);
+  }, [closeModal, openModal, pageId, router, useLiveData]);
 
   useEffect(() => {
     const root = ref.current;

@@ -1,5 +1,5 @@
-import { CcV2HtmlEmbed } from "@/components/command-center-v2/cc-v2-html-embed";
+import { CcV2Page } from "@/components/command-center-v2/cc-v2-page";
 
 export default function IntelligencePage() {
-  return <CcV2HtmlEmbed pageId="intelligence" />;
+  return <CcV2Page pageId="intelligence" />;
 }

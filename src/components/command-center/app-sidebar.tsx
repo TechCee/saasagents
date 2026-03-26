@@ -42,13 +42,10 @@ export function AppSidebar({
   return (
     <aside className="flex w-60 flex-shrink-0 flex-col border-r border-[var(--cc-border)] bg-[var(--cc-panel)]/90 backdrop-blur-sm">
       <div className="border-b border-[var(--cc-border)] px-4 py-5">
-        <div className="font-mono text-[10px] font-medium uppercase tracking-[0.25em] text-[var(--cc-cyan)]">
-          CC
-        </div>
-        <div className="mt-1 text-sm font-semibold text-white">COMMAND CENTER</div>
-        <div className="mt-2 text-[11px] leading-snug text-[var(--cc-muted)]">
-          Trustle &amp; Process Pilots
-        </div>
+        <span className="app-logo app-logo-rail" translate="no">
+          OpSync
+        </span>
+        <div className="mt-2 text-[11px] leading-snug text-[var(--cc-muted)]">Command Center</div>
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-4">

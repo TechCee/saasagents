@@ -46,6 +46,36 @@ body {
   font-family: var(--font-cc-display), system-ui, sans-serif;
 }
 
+/* Retro pixel logotype (Press Start 2P) — use with --font-app-logo on <html> */
+.app-logo {
+  font-family: var(--font-app-logo), ui-monospace, monospace;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.25;
+  image-rendering: pixelated;
+  display: inline-block;
+}
+
+/* Command Center v2 topbar (cyan theme) */
+.cc-v2-app .topbar .logo .app-logo {
+  font-size: clamp(10px, 2.6vw, 13px);
+  color: var(--cyan);
+  text-shadow:
+    2px 2px 0 var(--bg),
+    3px 3px 0 rgba(0, 191, 204, 0.45),
+    0 0 14px rgba(0, 238, 255, 0.38);
+}
+
+/* Legacy / alternate shell (Tailwind rail) */
+.app-logo-rail {
+  font-size: clamp(0.7rem, 2.2vw, 0.9rem);
+  color: var(--cc-cyan);
+  text-shadow:
+    2px 2px 0 var(--cc-bg-deep),
+    0 0 14px rgba(34, 211, 238, 0.35);
+}
+
 /* Subtle grid + glow for auth / hero areas */
 .cc-grid-bg {
   background-color: var(--cc-bg-deep);

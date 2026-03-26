@@ -10,7 +10,7 @@ function initials(email: string | undefined) {
 
 export function AppTopBar({
   userEmail,
-  subtitle = "Trustle & Process Pilots",
+  subtitle = "Command Center",
 }: {
   userEmail?: string | null;
   subtitle?: string;
@@ -18,11 +18,10 @@ export function AppTopBar({
   return (
     <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--cc-border)] bg-[var(--cc-bg-deep)]/85 px-6 py-4 backdrop-blur-md">
       <div>
-        <div className="flex items-baseline gap-2">
-          <span className="font-mono text-xs font-bold tracking-[0.2em] text-[var(--cc-cyan)]">CC</span>
-          <h1 className="text-lg font-semibold tracking-tight text-white">COMMAND CENTER</h1>
-        </div>
-        <p className="mt-0.5 text-xs text-[var(--cc-muted)]">{subtitle}</p>
+        <span className="app-logo app-logo-rail" translate="no">
+          OpSync
+        </span>
+        <p className="mt-1 text-xs text-[var(--cc-muted)]">{subtitle}</p>
       </div>
 
       <SystemClock />

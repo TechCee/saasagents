@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from "next";
-import { JetBrains_Mono, Sora, Unbounded } from "next/font/google";
+import { JetBrains_Mono, Press_Start_2P, Sora, Unbounded } from "next/font/google";
 import "./globals.css";
+
+const appLogo = Press_Start_2P({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-app-logo",
+  display: "swap",
+});
 
 const sora = Sora({
   variable: "--font-cc-sans",
@@ -41,7 +48,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sora.variable} ${unbounded.variable} ${jetbrains.variable} h-full antialiased`}
+      className={`${appLogo.variable} ${sora.variable} ${unbounded.variable} ${jetbrains.variable} h-full antialiased`}
     >
       <body className="min-h-full">{children}</body>
     </html>
