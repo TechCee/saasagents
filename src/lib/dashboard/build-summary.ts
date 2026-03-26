@@ -215,10 +215,6 @@ export async function buildDashboardSummary(
     .from("agent_schedules")
     .select("agent_type, next_run_at, cron_expr");
 
-  // #region agent log
-  fetch('http://127.0.0.1:7670/ingest/edda1648-0366-438c-9621-378fb5e6374b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95d6c6'},body:JSON.stringify({sessionId:'95d6c6',runId:'pre-fix',hypothesisId:'H_schedule_rows_exist',location:'src/lib/dashboard/build-summary.ts:220',message:'agent_schedules snapshot',data:{scheduleRowCount:(schedules??[]).length,scheduleTypes:(schedules??[]).slice(0,10).map((r:any)=>String(r.agent_type??'')),scheduleHasCronNext:(schedules??[]).slice(0,10).map((r:any)=>({t:String(r.agent_type??''),hasCron:Boolean(String(r.cron_expr??'').trim()),hasNext:Boolean(r.next_run_at)}))},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion agent log
-
   const scheduleByType = new Map<
     string,
     { next_run_at: string | null; cron_expr: string }
@@ -296,10 +292,6 @@ export async function buildDashboardSummary(
       dot_class,
     });
   }
-
-  // #region agent log
-  fetch('http://127.0.0.1:7670/ingest/edda1648-0366-438c-9621-378fb5e6374b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95d6c6'},body:JSON.stringify({sessionId:'95d6c6',runId:'pre-fix',hypothesisId:'H_ui_uses_summary_agents',location:'src/lib/dashboard/build-summary.ts:300',message:'computed agent statuses',data:{agents:agents.map(a=>({t:a.agent_type,s:a.status,sub:a.subtitle}))},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion agent log
 
   const { data: pendingCamp } = await supabase
     .from("email_campaigns")

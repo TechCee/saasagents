@@ -22,10 +22,6 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // #region agent log
-  fetch('http://127.0.0.1:7670/ingest/edda1648-0366-438c-9621-378fb5e6374b',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'95d6c6'},body:JSON.stringify({sessionId:'95d6c6',runId:'pre-fix',hypothesisId:'H_wrong_mode_or_cache',location:'src/app/api/dashboard/summary/route.ts:28',message:'dashboard summary requested',data:{uiPreview:Boolean(isUiPreviewMode()),hasUser:true},timestamp:Date.now()})}).catch(()=>{});
-  // #endregion agent log
-
   const summary = await buildDashboardSummary(supabase);
   return NextResponse.json(summary);
 }
