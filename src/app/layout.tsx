@@ -48,9 +48,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${appLogo.variable} ${sora.variable} ${unbounded.variable} ${jetbrains.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full" suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 }
