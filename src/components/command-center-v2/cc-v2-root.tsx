@@ -40,7 +40,7 @@ export function CcV2Root({
   orgName?: string | null;
 }) {
   return (
-    <CcV2ModalProvider>
+    <CcV2ModalProvider userEmail={userEmail} allowSignOut={!previewBanner}>
       <CcV2AppShell
         previewBanner={previewBanner}
         userInitials={initialsFromEmail(userEmail)}

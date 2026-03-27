@@ -2,6 +2,7 @@
 
 import { CcV2AgentBuilder } from "@/components/command-center-v2/cc-v2-agent-builder";
 import type { DashboardSummaryJson } from "@/lib/dashboard/build-summary";
+import { createBrowserSupabaseClient } from "@/lib/supabase/client";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
@@ -31,7 +32,15 @@ function overlayClick(e: React.MouseEvent, close: () => void) {
   if (e.target === e.currentTarget) close();
 }
 
-export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
+export function CcV2ModalProvider({
+  children,
+  userEmail = "",
+  allowSignOut = false,
+}: {
+  children: React.ReactNode;
+  userEmail?: string;
+  allowSignOut?: boolean;
+}) {
   const [open, setOpen] = useState<CcV2ModalId>(null);
   const openModal = useCallback((id: Exclude<CcV2ModalId, null>) => setOpen(id), []);
   const closeModal = useCallback(() => setOpen(null), []);
@@ -40,6 +49,32 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifErr, setNotifErr] = useState<string | null>(null);
   const [notifSummary, setNotifSummary] = useState<DashboardSummaryJson | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const [signOutErr, setSignOutErr] = useState<string | null>(null);
+
+  const onSignOut = useCallback(async () => {
+    setSignOutErr(null);
+    setSigningOut(true);
+    try {
+      const supabase = createBrowserSupabaseClient();
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        setSignOutErr(error.message);
+        setSigningOut(false);
+        return;
+      }
+      window.location.href = "/";
+    } catch (e) {
+      setSignOutErr(e instanceof Error ? e.message : "Sign out failed");
+      setSigningOut(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (open === "profile") {
+      setSignOutErr(null);
+    }
+  }, [open]);
 
   useEffect(() => {
     if (open !== "notif") return;
@@ -390,9 +425,29 @@ export function CcV2ModalProvider({ children }: { children: React.ReactNode }) {
               </button>
             </div>
             <div className="modal-body">
+              {userEmail ? (
+                <p style={{ fontSize: 12, color: "var(--t1)", marginBottom: 12 }}>
+                  <span style={{ color: "var(--t4)" }}>Signed in as</span>
+                  <br />
+                  <span style={{ fontFamily: "var(--fm)", wordBreak: "break-all" }}>{userEmail}</span>
+                </p>
+              ) : null}
               <p style={{ fontSize: 12, color: "var(--t2)" }}>Account settings coming soon.</p>
+              {signOutErr ? (
+                <p style={{ fontSize: 12, color: "var(--red)", marginTop: 12 }}>{signOutErr}</p>
+              ) : null}
             </div>
-            <div className="modal-foot">
+            <div className="modal-foot" style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexWrap: "wrap" }}>
+              {allowSignOut ? (
+                <button
+                  type="button"
+                  className="btn btn-r"
+                  disabled={signingOut}
+                  onClick={() => void onSignOut()}
+                >
+                  {signingOut ? "SIGNING OUT…" : "LOG OUT"}
+                </button>
+              ) : null}
               <button type="button" className="btn btn-ghost" onClick={closeModal}>
                 CLOSE
               </button>
