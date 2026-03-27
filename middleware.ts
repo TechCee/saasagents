@@ -1,37 +1,19 @@
-import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  let response = NextResponse.next({ request: { headers: request.headers } });
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !anon) {
-    return response;
-  }
-
-  const supabase = createServerClient(url, anon,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
-
-  await supabase.auth.getUser();
-
-  return response;
+/**
+ * Edge middleware must not pull in Node-only APIs. On Vercel we observed:
+ * `ReferenceError: __dirname is not defined` from edge-middleware when using
+ * `createServerClient` from `@supabase/ssr` (bundled dependency hits `__dirname`).
+ *
+ * Session + cookies are refreshed in Server Components / route handlers via
+ * `createServerClient` from `@supabase/ssr` in `src/lib/supabase/server.ts`.
+ */
+export function middleware(request: NextRequest) {
+  return NextResponse.next({ request: { headers: request.headers } });
 }
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|api/webhooks|unsubscribe).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|favicon\\.png|api/webhooks|unsubscribe).*)",
   ],
 };
