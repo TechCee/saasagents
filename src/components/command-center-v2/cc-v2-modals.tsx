@@ -417,7 +417,7 @@ export function CcV2ModalProvider({
           role="presentation"
           onClick={(e) => overlayClick(e, closeModal)}
         >
-          <div className="modal" style={{ width: 400 }}>
+          <div className="modal" style={{ width: 440 }}>
             <div className="modal-hdr">
               <span className="modal-title">Profile</span>
               <button type="button" className="modal-close" onClick={closeModal}>
@@ -426,13 +426,62 @@ export function CcV2ModalProvider({
             </div>
             <div className="modal-body">
               {userEmail ? (
-                <p style={{ fontSize: 12, color: "var(--t1)", marginBottom: 12 }}>
+                <p style={{ fontSize: 12, color: "var(--t1)", marginBottom: 16 }}>
                   <span style={{ color: "var(--t4)" }}>Signed in as</span>
                   <br />
                   <span style={{ fontFamily: "var(--fm)", wordBreak: "break-all" }}>{userEmail}</span>
                 </p>
               ) : null}
-              <p style={{ fontSize: 12, color: "var(--t2)" }}>Account settings coming soon.</p>
+              <div
+                style={{
+                  fontFamily: "var(--fm)",
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: "0.06em",
+                  color: "var(--t4)",
+                  marginBottom: 8,
+                }}
+              >
+                ACCOUNT SETTINGS
+              </div>
+              <p style={{ fontSize: 12, color: "var(--t2)", marginBottom: 10, lineHeight: 1.45 }}>
+                Manage workspace preferences, team access, and billing from these pages.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <Link
+                  href="/settings"
+                  className="btn btn-ghost"
+                  style={{ width: "100%", justifyContent: "flex-start", textDecoration: "none" }}
+                  onClick={closeModal}
+                >
+                  <span style={{ marginRight: 8, opacity: 0.85 }} aria-hidden>
+                    ⚙
+                  </span>
+                  Settings
+                </Link>
+                <Link
+                  href="/users"
+                  className="btn btn-ghost"
+                  style={{ width: "100%", justifyContent: "flex-start", textDecoration: "none" }}
+                  onClick={closeModal}
+                >
+                  <span style={{ marginRight: 8, opacity: 0.85 }} aria-hidden>
+                    👤
+                  </span>
+                  Users
+                </Link>
+                <Link
+                  href="/billing"
+                  className="btn btn-ghost"
+                  style={{ width: "100%", justifyContent: "flex-start", textDecoration: "none" }}
+                  onClick={closeModal}
+                >
+                  <span style={{ marginRight: 8, opacity: 0.85 }} aria-hidden>
+                    💳
+                  </span>
+                  Billing
+                </Link>
+              </div>
               {signOutErr ? (
                 <p style={{ fontSize: 12, color: "var(--red)", marginTop: 12 }}>{signOutErr}</p>
               ) : null}
